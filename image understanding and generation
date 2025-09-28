@@ -1,0 +1,14 @@
+TL;DR：图像理解和生成之间的相互促进是发展趋势
+图像理解和生成本来是两个领域。图像理解领域，大家使用Dino或者siglip之类的ViT来获得图像的feature，并用于VLM进行图像理解。图像生成领域，大家通过Diffusion、flow matching等方法训练图像生成模型。但是24年以来，一些工作尝试拉近两个领域的距离。出现这种趋势的一个重要的原因可能是，两个领域的模型能力提升都出现了瓶颈期，通过提升数据质量和数量的方式来升级的难度变得越来越大，因此尝试借助其他领域的模型来获得训练上的帮助变成了一个符合直觉的思路。
+用生成来帮助理解的主要思路是：通过某种生成式的方式来优化visual representation。
+一种做法是：将ViT的vision feature作为生成模型的输入条件，训练Diffusion模型生成图片，并让梯度传导到ViT，来优化ViT的参数。这种思路期望通过对ViT间接优化，来让ViT获得某种更好的representation（比如feature中会包含更多图像细节信息）。
+相关论文：
+DEEM: Diffusion Models Serve as the Eyes of Large Language Models for Image Perception
+DIVA: DIFFUSION FEEDBACK HELPS CLIP SEE BETTER 
+另一种思路是：直接优化visual representation，使得其接近其他有用的representation。比如对同一张图像，让siglip的representation靠近Dino或者VAE，使得siglip给出的representation能够结合其他模型的优势。
+相关论文：
+Ross: RECONSTRUCTIVE VISUAL INSTRUCTION TUNING
+用理解来帮助生成的主要思路是：用理解模型给出的representation来优化生成模型的representation。
+主要做法是：生成模型在生成最终图像前，会产生一些中间representation。通过将中间representation与siglip或者Dino针对同一张图片的representation靠近，来使得生成模型的中间representation能够获得一些来自理解模型的优势，期望这种优势能够帮助生成模型更好地生成最终图像。
+相关论文：
+REPA: Representation Alignment for Generation: Training Diffusion Transformers Is Easier Than You Think
