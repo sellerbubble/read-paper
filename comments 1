@@ -1,0 +1,596 @@
+【空间关系，细粒度图像感知】Set-of-Mark Prompting Unleashes Extraordinary Visual Grounding in GPT-4V 
+通过在输入图片上将每一个物体都圈注出来，来简化vlm识别图像的难度。
+优点：做法简单
+缺点：不同物体之间的上下左右关系明确但是深度关系不明确？可能搭配cot / 用于RL效果更好？
+
+ 【机器人action生成】Rekap 
+通过生成约束点来指导机器人action
+优点：通过vlm来给出完成任务所需要的约束点，然后通过优化方法来给出满足约束点的action轨迹。
+实际是利用了vlm的理解能力来完成任务，解耦了机器人完成任务的规划和操作。
+缺点：没有利用到可从数据中学习到的操作policy 。计算量大，给出的轨迹无法在执行过程中随环境变化而修改（没有反思能力）
+思考：【优化】 能否将对空间的理解转变为一个优化问题（给出数学建模？）
+
+【深度图数据集】Spatial Bot 
+给出了一个深度图数据集，可以训练vlm理解深度。对深度使用三通道方法表示，利于大模型理解
+优点：理解现实世界的深度，有助于操作。这种方法的极限是：给出当前场景所有物体的深度信息，可以有利于理解空间关系。
+缺点：深度图如何获取？能否动态的获取当前环境的深度信息？还是说只能在开始时得到深度信息
+
+【视频中的空间理解】Thinking in Space: How Multimodal Large Language Models See, Remember, and Recall Spaces
+干了什么：该论文发现，当让vlm根据一个视频来回答问题时，cot没有明显的效果.vlm经常在spatial relationship reasoning上出错,比如说vlm在回答视频中物体的距离，方向或尺寸时常常答错。该论文认为，cot作为一种回答方式对于vlm的空间推理能力没有帮助。vlm需要一种更有效的回答形式或者说推理形式。
+因此，该论文提出这样一种回答形式：先让vlm输出物体在某一帧的坐标（将该帧划分为一个10乘10的网格，然后指出物体在网格中的坐标），然后根据这些坐标来回答问题。该论文认为这种回答形式会更有利。
+这种做法的本质就是：先让模型找到问题中的物体（visual grounding) 然后根据坐标回答。
+这类论文已经屡见不鲜了。
+优点：将坐标简化为10乘10的网格，简化了grounding难度。
+缺点：相比于真实坐标的visual grouding, 这种网格坐标肯定会带来细粒度不够的问题。
+改进方向：visual grounding本身缺少对物体的三维坐标的理解。在视频QA中，由于物体本身也可能处于运动状态，坐标可能改变，因此isual grounding的终极形态应该是能给出物体的四维坐标。这对于vlm的reasoning能力是极大的挑战，如果哪个vlm能够做到对于视频中运动物体的spatial relationship understanding， 那么绝对能成为vlm领域的aha moment
+
+【物体距离数据集】Spatial vlm 
+通过其他模型标注出包含物体间距离的数据集，训练模型理解距离的概念
+优点：对距离的估计可以动态得到
+缺点：准确性？ 能否提升为在一个视频中两个物体的距离？
+
+【latent reasoning】Training Large Language Models to Reason in a Continuous Latent Space 
+
+该论文提出一种新颖的latent COT方法，即通过生成latent token来尝试提高reasoning 能力。
+详细来说，该论文认为，常规的COT方法实在是说了太多的话，其中有很多是没有必要的内容，比如很多语义重复的句子或者为了语法正确的虚词。但是模型为了按照人的方式进行思考，必须要这么说。因此，该论文希望让模型能够摆脱人的思考方式，不用在COT的时候一定要说一些人能够看懂的话，而是说一些模型自己能够理解的话就行了～
+基于上面的动机，该论文尝试让模型在说出答案之前，先说几个不用被解码为词语的latent token，然后再正常回答问题。
+本质上，这几个latent token就像VIT在处理image token时加入的cls token一样，可以起到聚合问题信息的功能。
+优点：
+减少COT的长度，减少由于长度带来的模型幻觉。原因是该论文的训练方式：使用COT的Question&Answer数据训练，训练时使用latent token的同时去掉COT Answer中的前面的推理步骤。这种训练目标可以使模型跳过COT的前期推理步骤。
+缺点：
+一：训练目标不优雅。如果按照该论文的训练目标训练到极致，模型应该拥有能力在推理时直接从推理的中间步骤开始回答。这就像一个人在说话时直接从话的后半段开始说。如果真的要这样说话，这个人起码应该在说话前先用脑子想好话的前半段。而该论文的训练方式使得COT Answer中被去掉的推理步骤的信息丢失了。
+这时候就会有人问了（我自己问）：论文的insight就在于模型不用向人一样思考，所以你在这用人的说话方式类比模型的训练方式合理吗？
+这是个很好的问题。我的想法是：用了COT数据训练，就代表follow了人说话思考的方式。既然要让模型学习COT，那自然不能只学后一半内容。
+所以可以在后期工作中尝试使用latent token解码去掉的推理步骤使得COT Answer信息更完整。
+二：COT数据质量不够。目前好的COT数据的推理步骤已经达到数十上百步，实验中仅仅使用latent token去替代最多六步推理步骤，说服力不足。
+可能又有人会问（我自己又想问了）：但是为什么这篇论文中模型确实只学了COT的后半段内容，效果却比模型学习正常的COT数据好呢？
+我对此的想法是：（如果实验结果没有问题的话），该模型的做法通过在更短的COT数据上训练，实际上减少了对COT格式的overfitting。在该论文挑选的benchmark上，可能用很少的推理步骤就能得到答案，更长的COT反而让模型在推理时会把自己绕进去。
+因此，总结一下：这是一篇读完一遍十分惊艳的论文，但是效果不一定真的好。
+
+
+
+【 Nature】Language is primarily a tool for communication rather than thought 
+实验发现，在脑袋中进行思考时并不一定激活了语言区域。 以及其他实验。。。
+表明在(各种类型的）思考时语言并不是一定被需要的，并且只有语言对于思考过程是不够的。
+语言的各种特点（sound ，word等）表明其不断向着更高效的沟通功能优化而非思考功能。
+启发：llm是否可以是使用除了cot的其他形式帮助思考？latent token 是否可以用来替代辅助推理的图像？latent token是否可以出现在llm的不同layer？
+
+【vlm reasoning】icot 
+VLM在根据图片回答问题时，如果能够找到图片中和问题相关的图像区域，把这个区域对应的image token拿过来，放在回答问题的过程中，能否帮助模型更好地回答？
+比如，问模型图中有哪些水果，当模型开始回答说：“图中的第一种水果是”。这时停下来，找到图中某种水果（比如说葡萄）的图像区域，把对应的image token 放在“是”这个token的后面，让模型看着（葡萄）的图像信息来回答水果种类。这本质上是一种类似于RAG的思路，让模型根据参考资料来回答问题，只是icot的参考资料就来自于原本的问题信息（也可以理解为一种更直接的grounding方法）。
+实现方式：简单来说，是通过找到当前attention score比较高的image token，认为这些的image token会和问题更相关。
+直观地想一下，这样子好像确实会帮助到模型回答问题呢。但是，不妨深入地做一些本质的思想实验。
+icot的这种做法是希望解决VLM能力中的哪个短板？：是认为模型自身找不到对应的图像区域吗。但是如果模型真的找不到，那么对应图像区域的image token的attention score也就不会高，那么这种做法也没用呀。
+所以icot的前提一定是默认VLM已经有足够的能力找到对应的图像区域，并且这种对应关系会体现在attention score上。
+那么，把对应问题的image token单独拿出来再用transformer处理一遍会有什么好处吗？如果模型会将图片中的葡萄回答成荔枝，icot的做法就可以让模型把葡萄正确地识别出来吗？我认为很难。
+因为，虽然icot虽然名字上带有cot，但是它很难像cot一样能够激发模型给出更多有用信息，它只是把模型能够做到的事情手动又做了一遍（模型本身已经能找到对应图像区域，icot又找了一次）。
+而且，还有一个方法上的小问题。icot需要设置一个数量参数，表示它每次需要找到多少个对应的image token。那么如果VLM需要回答的是“图中有几个葡萄”这样的问题，参数设置的小了岂不是不一定能将所有葡萄的image token都找出来，会不会反而干扰模型回答呢？
+经过这样一番思考，icot的实际可行性好像就下降了一丢丢。
+一份好的工作应该首先从一个通用，脚踏实地，合理的motivation出发，才更有可能做到solid。
+但是icot也有很多优点。一个让人读完intro就感觉眼前一亮的idea，绝对是有价值有意义的。正因为如此，它才值得更深入的思考。
+那么有没有什么好的基于icot的思路呢？
+1：数据构造。在一个强大的VLM上使用icot处理数据，就可以得到一个细粒度 image text interleaved的数据。（icot给出的对应图像区域的image token在图片上可能是分散的，也许需要通过某种方式框出包含这些image token的子图）。interleaved数据经过处理可以用于训练多模态生成模型。
+2：更好的image text interleaved 推理方式，正在用力思考中。。。
+
+【RL VLM】R1-Zero’s “Aha Moment” in Visual Reasoning on a 2B Non-SFT Model 
+对一个没有SFT的VLM使用RL比使用SFT更能在某些benchmark上看出效果，同时也有aha moment
+但是对一个SFT的VLM使用RL会出现trivial reasoning trajectory，因此不好
+原因应该是其用的SFT data 质量低
+
+【复杂任务planning】Code as monitor 
+先生成完成任务的步骤，然后在图片上标注和各步骤执行相关的关键点，然后生成对关键点的约束代码，最后根据约束来执行任务并得到反馈。如果失败则根据反馈重新执行一遍。
+优点：失败了可以根据经验重新尝试
+缺点：这类复杂planning的任务的promising future在于：可以提供一个自动化采集轨迹的方案，也算是为data scaling提供了一条路线。这类planning的本质缺陷在于，缺少了对于环境动态的实时感知，如果要让它完成一个简单的倒水任务，等到它意识到时水漫金山，早已。。。
+question：从生成约束代码到机器人执行，是如何实现的？
+
+【data generation】demogen 
+将一条轨迹分为多个stage，然后改变不同stage来创造不同的轨迹
+Generation data 需要生成，rule based 还是 learning based 需要考虑。
+Data generation本身是一种scaling的路径，因此更好的generation一定是满足更simple的scaling条件。
+比如在generation的时候需要减少rule， 需要能够从更好的来源处蒸馏，需要有判别器
+
+【scaling hyperparameters】Stepfun scaling 
+对于超参数 sssscaling law的看法：
+
+【robot cotraining】Egomimic 
+收集人类视角的操作数据和人手运动轨迹，和机器人数据联合训练。
+好的结论：人类数据有助于机器人泛化到机器人数据中没有的场景和物体颜色。
+改进方向：如果能够做到机器人泛化到人类数据的task上，就很厉害了。
+优点：简洁的gap bridging method
+统一数据的坐标系：将人类和机器人的操作数据都转换都以机器人相机为坐标系
+将图片中的人手和机械臂都mask并加上视觉指引
+对数据进行normalization，数值接近
+
+【powerful VLA】Gemini robotics 
+Gemeni embodied reasoning 模型可以zero shot的代码控制或者few shot的直接控制
+Gemini robotics 模型可以输出edit image用于指导轨迹生成。 模型的适应性极强，可在微调数据上快速学习达到很高成功率
+优点：一个强大的模型可以端到段实现任务。
+
+【COT】Chain of Draft 
+通过在prompt中要求每个reasoning step 字数为5，降低长度，同时和COT 效果差不多。
+实际上COD 没有COT好，但是可以通过增加COD训练数据来让其变好
+优点：很有用的方法，降低长度是一个很有价值的方向。
+缺点：造一批COD数据难度怎么样？应该不是很难。 能否通过RL的方法来实现COD？
+
+【3D feature】BID3D
+将多视角的图片和深度图输入模型，得到3D grounding box
+作为一个backbone无需point cloud理解3D信息
+
+【imatation learning】Behavior suited robot 
+提出了一个模仿学习方式控制全身，包括可以弯曲身体
+有不错的failure recover能力，思考来自于能力：数据？
+
+【latent action】IGOR: Image-GOal Representations Atomic Control Units for Foundation Models in Embodied AI
+
+具身智能也应该 Next (Latent) Token Prediction !
+IGOR: Image-GOal Representations Atomic Control Units for Foundation Models in Embodied AI
+当前VLA的局限性在于：不同的机器人有不同的物理特性，因此在某个机器人数据上训练的VLA是无法用来操控另一个机器人的。但是，很明显所有的机器人在运动时都具有某种共性，比如机器人在抓桌子上的物体时都会将夹爪向下移动。
+Motivation：能否有一种方式，学习到机器人运动的共性（latent action）呢？然后再将共性和特定机器人的特性相结合，帮助机器人更好地学习特定的任务。
+IGOR就是这样一篇工作。IGOR首先训练了一个可以从机器人操作视频中提取latent action的模型1，以及一个可以根据latent action生成机器人的操作视频的模型2。然后训练了一个可以预测机器人下一时刻的latent action的模型3，以及最终的根据模型3预测出的latent action预测机器人的real action的模型4。
+这里的四个模型分别有不同的作用。
+模型1是用来尝试学习某种信号，希望这种信号能够包含机器人视频中机器人运动的某种特征。但是如何验证这种信号确实包含了运动特征呢？IGOR用模型2来做这件事：如果模型1从内容为机器人向左推杯子的视频1中提取到了某种信号。然后模型2根据这个信号以及一张内容为机器人触碰水果的图片，能够生成内容为机器人向左推水果的视频2，那么就说明这个信号确实包含了视频1中的运动特征，这个信号就可以被称作latent action啦！
+学到了latent action之后，如何应用到特定的机器人上呢？IGOR就使用模型3和模型4，对于一个想要完成某个任务的机器人，先用模型3预测机器人完成任务所需要的latent action，然后模型4再把它转换为real action就可以了。
+这篇论文的优点是什么：验证了机器人的latent action确实可以被模型学习出来。
+改进方向：
+1. 数据多样性可以增强。当前只有机器人和人手的操作视频。如果在多物体运动或复杂运动的视频中学习，是否latent action会出现神奇的表现，比如能够学习到世界中不同物体的运动规律。
+2.Latent action可以表示长时序action。当前latent action只包含机器人下一时刻的运动信息，能否通过训练让其包含更加长时序的运动信息。
+3.Latent action可以包含多模态信息。如果机器人需要执行带有推理性质的任务或者规划性质的任务，是否可以让latent action包含文字或者图片模态的辅助机器人完成任务的信息。
+4.训练方式应该更统一。IGOR的训练量比较少，还没有超出一般VLA的训练量。在这个训练量级latent action的范式很难比VLA的end to end好多少。但是latent action的潜在数据十分巨大，远远不是VLA的数据增长速度可以赶上的。如果未来要scaling data进行latent action模型的训练，肯定要使用更统一的训练方式，而不是现在这样用4个模型。
+那么，题目的Next （Latent） Word Prediction 是什么意思呢？这其实代表了我对embodied AI的展望：robot learning应该从已有的大量数据中挖掘出值得学习的信号，正如nlp是学习文本中的next token，robot也许也应该学习视频中的next latent token。
+
+【tactile】Neural Feels
+触觉的图像转变为深度图，然后将不同手指的触觉深度图作为nerf的不同角度，用于重建物体
+新的理解触觉的方式
+
+【CLIP Finetune】CLIP Models are Few-shot Learners: Empirical Studies on VQA and Visual Entailment
+Clip few shot learning： 将固定模板的question answer 作为训练数据，训练CLIP理解问题和答案的形式
+Train Bias and Normalization (BiNor) parameters
+【CLIP Finetune】LiT : Zero-Shot Transfer with Locked-image text Tuning
+对一个已经训练好的VIT，再进行训练时，关掉VIT打开text encoder效果比都打开好，因为可能VIT已经有了很好的representation再次在其他数据集上训练会破坏representation的通用性，让其在其他数据上表现变差。
+一个小巧的结论
+
+【bidirectional autoregressive】dense policy
+对于固定长度的action token，每次预测间隔为 1/2^n 位置处的token
+问题1：在所有预测结束时算loss，是否有利于模型先学到早期预测位置处的action
+insight是这种方法可以减少训练难度，不一定。
+是否可以理解为一种时序预测问题，用各种方式预测一个时间序列。但是在具身领域，这对吗？
+
+Dense policy对于机器人的模仿学习提出了一种新的训练和推理方式。简单来说，对于一个transformer网络，Dense
+Policy 要求它每次根据输入信息输出机器人未来K步的action。但是不同于以往工作，要么一步一步输出，要么同时输出K步，Dense policy要求网络先预测第2/K步的action，然后预测4/K和4/3K步的action，然后是1/8K，3/8K，5/8K，7/8K的action，就像插值一样不断把预测的action往K个空白里面填。
+【好处】：论文声称，这种方式要比ACT，Diffusion Policy 都要好，成功率更高，而且预测K步所需要的预测次数也远小于K。
+【反思】：现在具身智能领域百花齐放，论文根本看不完。在一个用机械臂抓水果的任务上各种方法可谓争奇斗艳，从大模型VLA到小模型，大家在一点点数据上拼命改模型看效果。简单鲁棒的ACT，Diffusion Policy已经表现良好而且十分通用，可是在各个论文里就是怎么都要垫底，可谓怪哉。
+openai的理念 ：17年以前是模型，以后是xy
+
+【video view generation】 trajectory crafter
+生成视频的新视角。 先对视频生成一个动态点云估计，然后对指定相机位置使用点云渲染得到信息，利用信息合成视频。
+将新视角生成问题解耦为先得到点云，再理论用点云。从而减小了训练难度。
+本质上是利用其他领域的先验信息合成训练数据。 （latent action）
+
+【Time series】A Time Series is Worth 64 Words: Long-term Forecasting with Transformers
+使用自监督的方法来对时序信息进行representation learning
+将时序信息的不同channel分开，单独处理，对一段时序采用mask then predict的方式自监督学习
+思考：一种充分的学习数据关系的方式？数据量：通常几万个time step
+是否transformer很适合学习representation，而非直接预测？直接预测的效果好像不一定比简单的MLP强（Are transformers effective for time series forecasting）
+
+【CLIP analysis】Is clip ideal? No , can we fix it ,yes
+clip存在缺陷，不能很好的区分不同物体的属性，不能理解诸如文字中的抽象关系，比如是否存在，位置描述等
+图片和文字关于世界的描述，包含实体（object） 属性（attribute） 关系（relation）。一个完美的encoder应该分别将图片和文字的对应部分投射到相近的latent space，但是clip的训练很难同时做到。它往往只对实体的latent space能够比较接近。
+因此，使用cls token 和eos token 计算相似度的方法在很多问题上并不准确。
+该论文使用所有image token和text token计算相似图，然后使用learning based 方法找到相似关系。
+神奇现象是，对应object的image token和对应的text token相似度并不高，而是background image token会高一些，这说明相似度并不像我们直觉理解的那样。clip 作为一个整体可以把image 在latent space和text 接近，但并不是每一个单独的image token都可以显示的做到同样的效果
+对于不包含真实含义的词语，比如位置关系或者是否存在，将这些text token的相似度分数用随机分数替换，
+目的很难说？
+理解CLIP 在zero shot运行的局限性，图像中的高维信息需要其他手段来获得。论文中是用了一种简单的网络来捕捉所有相似度之间的关系。 
+
+用特征工程的方式把玩CLIP
+CLIP 最令人惊艳的就是其zero shot 图像分类的能力。给定一张苹果图片和一个句子模板：这是一张（）的图片。往括号中填入不同的待选择答案（比如苹果或香蕉），然后将填入后的句子和图片通过CLIP计算二者的相似度。会发现“这是一张（苹果）的图片”这句话和图片的相似度更高，从而完成了对图片的分类。
+但是这种分类方法的上限在哪里呢？经过实验发现，对于一张苹果在上，香蕉在下的图片，句子1“苹果在香蕉上面”和句子2“苹果在香蕉下面”对于图片的相似度是几乎一样的，甚至句子2会相似度更高一些。相似的例子还有，有红色苹果和黄色香蕉的图片会和错误的句子“红色香蕉和黄色苹果”的相似度更高。因此，当涉及到图片中物体的属性或者物体间关系时，CLIP的zero shot 分类能力就十分不够用了。
+那么，有没有办法可以提高CLIP对于这类更难的分类问题的能力呢？这篇论文给出了一种简单粗暴的方法：计算每一个image token和每一个text token 的相似度，然后将这些相似度分数输入给一个网络，最后由这个网络给出一个综合的相似度。
+这种做法很像kaggle比赛中常用到的特征工程：对原始数据进行创造性转化或组合，期望提升模型能力。这篇论文认为每一个image token和text token计算得到的相似度都是有意义的，所以要把所有相似度都计算出来让模型来学习其中的规律。
+优点：直观暴力的特征工程的做法，确实使得CLIP在关于物体属性或者关系的问题上的分类能力有了轻微提升。
+缺点：感觉提升很微弱，是不是cherry pick或者过拟合。
+思考：能不能通过大量训练提高CLIP在细粒度分类上的能力。通过image text pair数据可以轻易构造大量负样本，比如随机更换text data中的位置关系或者物体属性。
+如果需要用特征工程的思路挖掘CLIP的能力，能否有一些更好的做法。
+思路一：使用image的cls token和所有的text token计算相似度或者使用text token中的eos token和所有image token 计算相似度，然后让一个网络给出综合相似度，这样子的做法会比论文的做法计算量少。 
+思路二：取CLIP的不同layer的image token 和 text token 计算相似度，然后让一个网络给出综合相似度。因为有研究表明CLIP的浅层关注局部细节而深层关注全局关系，这样得到的相似度也许包含更多信息
+思路三：根据CLIP中的attention score，取出部分重要token计算相似度，然后让一个网络给出综合相似度。因为大家经常会意yin attention score能够体现图像各个image token的关系，所以在这里也可以缝合图像压缩领域常用的attention score思路。
+思路四：停止特征工程灌水。CLIP作为VLM的vision encoder，有没有足够好的图像分类能力已经不是最重要的了。只需要CLIP在保持其出色的对图片中整体语义的提取能力的同时，确保CLIP给出的image token没有丢失其他细节信息（比如对于一张红色苹果和黄色香蕉的图片，CLIP需要在给出的image feature中让红色和苹果这两个信息相互关联，而并非孤立地包含红色和苹果两个信息，这样的话哪怕CLIP本身不能通过相似度判断苹果是否是红色，其给出的信息也可以让VLM来做到正确判断）剩下的就让VLM来做就可以了。（不知道是否有相关的论文，表明CLIP给出的iamge feature缺失了某些无法被还原的图像属性？）
+【3D generation】structured 3D latents
+对3D assets编码解码的方式，可以用在multiview或者其他包含3D信息的数据上
+
+【3D CLIP】CLIP goes 3D: Leveraging Prompt Tuning for Language Grounded 3D Recognition
+将一个3D encoder 和 CLIP 以及text encoder 对齐。
+只训练3D encoder和visual prompts（在CLIP中每一层加入learnable token）
+目标是训练得到一个3D encoder用于3D分类，检索任务
+思考：将3D encoder的feature space通过对比学习和clip对其有什么独特好处。
+在小数据量上，训练了100个epoch，得到了几十种物体的3D feature。
+好像没有什么特别的好处。对比学习只是相当于提供了一种除了label之外的更丰富的信息，可以减少过拟合？
+
+【video clip】CLIP VIP （可以参考的CLIP Finetune 策略）
+将clip在视频数据上post training，会发现效果不一定好。原因是视频的text data 不一定是caption，而会是类似subtitle的格式。
+在使用vit处理video image时，使用proxy token 。各个image token只能看见相同帧的token和proxy token，因此proxy token 用于传递帧间信息。
+训练时，有多种modal：视频以及单帧，caption以及subtitle，比较了多种modal组合对比学习之下的效果，发现视频+subtitle，caption 以及单帧+caption效果最好
+在使用CLIP进行微调时，有很多原因会导致效果下降，需要从多角度思考mitigate bad impact的方法。比如这里的对视频中的中间帧生成caption，以及使用proxy token。
+
+【spatial understanding】mm spatial 
+Data generation pipeline + benchmark
+
+【Action recognition】 action clip
+Action recognition 经历了两个阶段：特征工程和architecture 工程
+visual prompts：将image text model 训练为video text model时为了避免遗忘需要减少过于修改模型，因此增加部分参数在其他方面来适配下游任务。比如加入learnable token，或修改模型结构
+这样一个能够识别action的模型，也肯定包含latent的action表示，可以用于训练模型提取latent token。是相比genie之外的另一种做法
+
+【robotic clip】Robotic-CLIP: Fine-tuning CLIP on Action Data for Robotic Applications
+一种判断任务是否完成的思路：使用text和最终场景计算相似度。
+Base on alpha clip model，image 和text encoder都 freeze，训练 adapter network，作用是赋予text 更多信息。将robotic clip用于下游任务时也需保留adapter network。
+增加了一个triplet loss，让完成动作后的image 和 text的距离小于完成动作前的image 和text的距离。
+这种做法真的好吗，无法被应用在vla，因为有多余的adapter network。可移植性差
+
+【CLIP finetune】alpha clip
+如何让CLIP 理解指定区域：在图像上新增加一个通道（一种比较新颖的做法），且和卷积操作不冲突（在VIT第一层对mask单独使用conv）
+训练方法：冻结text encoder，训练image encoder，相比于alpha conv，VIT使用小学习率
+混入一定比例的原始数据保留原始能力
+可以用于深度信息融合！
+
+【CLIP Finetune】Point CLIP
+如何让CLIP 理解point cloud信息：将point cloud 投射到不同的方向，获得不同方向的深度图
+加入了adapter，只训练adapter
+
+【Visual grounding】Woodpecker
+使用了一套流程来增强vlm回答图像问题的准确性。
+先caption，然后提取图片object，然后构造和object相关的问题，比如数量位置关系，调用工具给出答案。
+然后将这些参考用来回答最终的图像问题。
+是高质量数据生成的pipeline。在具身领域，有哪些方面的数据可以以这样的方式构造？显式的数据可以，latent 数据呢？
+同时这个pipeline可以直接用于推理。一个强大的VLM可否利用类似的pipeline （包含图像中的显示信息和latent 信息），然后zero shot的进行控制机器人完成任务
+
+【CLIP finetune】CLIP fields
+使用CLIP 理解场景信息
+注意其训练方式和应用方式
+
+【CLIP for robot contrl】CLIPort
+使用一个CLIP和另一个网络建模输入image 和 text feature，直接输出robot action
+
+【CLIP for RL】roboclip
+clip计算图文相似度用于reward，和minecraft clip的思路很像
+
+【VLM RL】mm rlhf
+标注了大批human preference 数据，带有preference reason
+question： reward model 给出reward时是否需要理解answer的正确性
+
+【SAM VLM】Sa2VA: Marrying SAM2 with LLaVA for Dense Grounded Understanding of Images and Videos
+结合llm和sam2模型，用于vqa和image segment
+
+【Token merge prune】Frame fusion
+观察到在shallow layer的token之间相似度更高，因此在shallow layer merge 
+只merge 视频中相邻帧的token
+Idea： 能否对action token 采用merge prune？ 类似于 FAST的思路？ 减少对action trajectory的学习难度
+
+【VLA pattern】embodied reasoner
+在search objects 任务中，构建了 (observation, thought, action) 的数据格式。可以构造包含self explore， self reflect等特点的数据
+
+【Contrastive learning】 LLaVE: Large Language and Vision Embedding Models with Hardness-Weighted Contrastive Learning
+发现 positive pairs 和 negative pairs 之间的平均 相似度差距并不大，不到0.1 。
+做法：使用相似度来作为weight乘以原本loss中的相似度，但是weight本身strop gradient。因此：对于相似度高的negative pairs，其在loss中的占比也更大。
+揭示了对比学习的现象：正负样本对相似度之间的差别没有想像中那么大，这也是对比学习的缺陷，其对特征的捕捉是模糊的？
+
+【visual tokenization】V2flow
+将visual token 映射到llm 词表的logits，然后根据logits和词表embedding加权组成visual token的新表示，和新表示最近的vision 词表中的token作为 quantized visual token。训练任务为masked prediction
+这样子的好处是什么？quantize 的过程考虑到了视觉和语言之间的相关关系。但是训练任务是否一定需要语言信息（对于masked 图像的恢复）。
+问题： quantize visual token 的目的是希望autoregressive的预测。就像llm一样。那么这个做法的本质就应该和词表的表达方式无关？在训练过程中词表会不断优化。
+这种做法是否会导致一张图片中的不同区域对应的llm logtis十分相像，如果认为这种做法会将visual token映射到相近的词语上？
+
+【token 压缩】LLava mini 
+使用learnable token cross attention image token，并且将得到的learnable token 和 text token在输入llm前经过一个简单的transformer。之后只将text token输入llm。
+思路：由于发现image token在llm 浅层layer 更重要，深层layer信息被融合进入text token。因此可以考虑加入一个小模块将image token 直接融入text token。这样llm中token数量就减少很多。
+问题：小模块的信息融合能力可能比较弱，image token 信息丢失可能比较多。
+思考：最简单的做法可能是直接在llm的部分深层layer直接drop image token。---> 已经在 visual token withdraw中被实现了
+
+【embodied 大脑】robobrain
+一个用于planning，trajectory predict的VLM，作为大脑
+但是其planning的方式：输出2d trajectory point ，不是很显式？是否方便用于小脑模型
+【regional clip】fineclip / Contrastive localized language image pretraining
+这一类工作的核心都是针对某个区域，计算image features和caption的相似度差异。
+期望能够使得CLIP 捕捉局部细节的能力增强。
+问题：这种局部训练是否和整体训练的loss之间相互冲突？CLIP到底能否做到捕捉图片中所有的语义信息？
+对比学习本身就是非精确的。使用相似度来作为分类标准，这种情况下精细的caption描述是否有必要
+能否设计一种实验，证明两种loss之间的梯度下降相互不冲突？
+或者分工不一样？使用cls token 来作为整体，image token（pooling）用作局部
+
+如何打造终极CLIP？
+CLIP的最大特点就是其image token中包含了图像对应的语义信息。准确来讲，我们现在有一个cls token 和一个eos token。cls token 是一个概括了图像信息的向量，eos token 是一个概括了文本信息的向量（这个文本信息是一句描述图像的话，比如这张图片中有一个苹果）。现在cls token 和 eos token 两个向量可以做到在数值上比较接近，这就是CLIP厉害的地方。
+但是，一个自然而然的问题就是：cls token 和 eos token作为长度只有几百或者几千的向量，能够包含整个图片的详细信息吗？比如一张图片中有三个苹果和四个香蕉和五个菠萝，位置分别在图的下中上，cls token 和 eos token能够做到表示这些所有的信息吗？我认为是不能的。而事实上目前最强的CLIP也确实不能做到。
+而且，我认为CLIP的训练方式有一个跷跷板难题：如果文本只是一句大致的描述，那么cls token为了靠近文本信息，只会提取图片中的主体信息。从而那些细节或者边角信息的image token得不到关注和优化，变得放飞自我。但是如果文本是一句详细的丰富的描述，小小cls token又没有能力做到丰富的表达来靠近文本描述对应的eos token，或者eos token本身就没有办法概括文本描述的所有信息，从而导致要么训练难以收敛，要么最后cls token和eos token仍旧只是利用到了图像和文本的大致信息。不管怎么样都不舒服。
+那么，如果想获得一个能做到这么细粒度的理解能力的【终极】CLIP，应该怎么做呢？
+一个很自然的想法就是：对于每一个image token，都让其和对应的详细文本描述的eos token接近。比如，找到三个苹果的所有image token，通过某种方法（比如pooling）得到一个概括性token。再得到“这是三个苹果”这句话的eos token，让这两个token靠近，这样不就做到了让每个image token都包含对应的细粒度语义信息了吗？
+这就是FineCLIP: Self-distilled Region-based CLIP for Better Fine-grained Understanding这篇论文的做法。
+那么这种做法有没有什么不足的地方？我想到了两点。
+一：如果每个image token 都包含丰富的语义信息，那么是否会损失本身的图像信息？比如苹果对应的image token是包含了苹果这个语义概念，但是丢失了苹果边缘，或者大小之类的图像信息。针对这点论文给出了改进做法：让局部image token 和另一个保留了更多图像本身信息的token去靠近。但是该论文具体的方法不一定效果很好。
+二：这种局部的image token 可能无法包含相对关系。比如苹果和香蕉的位置关系，就不一定能通过苹果对应的image token所得到（或者说利用CLIP中的cross attention期望能够让苹果对应的image token包含和香蕉的位置关系），因此需要让局部image token对应的详细文本描述更详细，比如“这是处于下方的三个苹果”。
+总结来讲，如果想得到终极CLIP，需要狠狠地细粒度对比学习。对比学习本身就比较粗糙，比较看感觉，所以想要细粒度就是一件很难的事情。如果只是一个正常的CLIP加上一个强大的llm和丰富的数据就能让VLM实现细粒度的感知，那么也许终极CLIP永远也没有必要。
+【unified modal】 Chameleon
+训练有难度，使用各种方法使训练稳定
+
+【latent motion】LaMD: Latent Motion Diffusion for Video Generation / Semantic Latent Motion for Portrait Video Generation
+为了让视频生成中的动作质量比较高，尝试用一个diffusion model生成latent motion信息，用来指导视频生成。
+和 igor 思路很像，都是先训练一个可以得到latent 信息并且能够根据latent信息生成video的模型。然后训练另一个模型预测latent。
+Semantic Latent Motion for Portrait Video Generation 中 在 motion encoder中对图片添加了高达90%的mask，发现依然能够不错的建模latent motion。说明latent motion所需要的信息少于image generation（MAE中是75%）
+
+【video generation for robot 】L EARNING TO A CT FROM A CTIONLESS V IDEOS THROUGH D ENSE C ORRESPONDENCES
+先预测video,然后生成video中物体运动的optical flow，然后根据深度图和seg mask 计算物体的3D point 以及投影在图片中的2D point，最后根据point 和 optical flow计算robot的运动。grasp gesture采用某种随机采样。
+评价：这是一种技巧性很强的方法，每一个环节都很脆弱，尤其是根据optical flow 计算point的运动以及grasp gesture 采样，十分不鲁棒。
+但是给出了一种根据video标定robot action的方式
+
+【world model】L EARNING I NTERACTIVE R EAL -W ORLD S IMULATORS
+input image and instruction , output video
+脑洞： input instruction 可以是 real action ，从其他场景的robot action 用于当前场景，生成当前场景的操作 video
+，用于提升数据丰富性。同时，如果instruction 可以是real action，那么可以用一个工具生成批量action，然后根据output video 筛选有效的。这就做到了仿真器的效果
+思考：一个极致的world model 是否是仿真器的终极形态，需要做到最好的物理特性理解
+【video generation】gen2act
+使用一个视频生成模型生成视频预测，然后从视频中解码出robot action，解码时用point track信息辅助解码。
+利用了视频生成模型的强大backbone能力。
+思考：能否让视频生成模型完成一些需要推理的instruction。这是当前使用llm backbone 比视频生成backbone 好的地方？
+
+【action tokenization】VQ BET
+似乎：对action sequence 整体用 vector quantization以及encoder decoder 表示。能建模整体的sequence 特征？
+相当于是学习了一个处理action sequence的encoder。其实是没有必要的？
+
+【action tokenization】QueST: Self-Supervised Skill Abstractions for Learning Continuous Control
+同样是将action sequence 离散并下采样为多个token，更易于学习。
+相当于提前捕捉action 的某种规律，并将这种规律显式地表示出来。细粒度的tokenization肯定是很重要的，类比llm。但是能否做到对于不同的robot action 使用同一个tokenization。这就是latent action相比于vector quantization的优势
+
+【VLM】kimi VL
+1. Use siglip for navit on 2.0t tokens with coca loss
+2. 0.1t token alignment with pixel shuffle for down sampling
+3. Multi stage pretraining and sft with much   text dat
+
+ 【single transformer VLM】scalability of simplicity :SAIL
+不使用vision encoder 直接将图片用mlp 投影为token。然后训练
+训练第一阶段使用500M image text pair，数量巨大。
+发现 attention score 给image token很多，相比正常VLM。虽然这一点什么都不能说明。
+思考：如果一直对image token 分配很多attention score，说明文本的思考变少了？而且是否说明文本提取image token信息的能力不足？因为没有在早期就将信息融合进text token。但是在不清楚attention score的具体机制的情况下无法断然下定这种现象可以说明模型更加 visual-centered.而且也可能是因为image token 中不包含更多的先验信息从而让text token 更难理解，从而难以进行更加复杂的任务。
+好处就是不用担心图像信息丢失。
+强调对image token 使用bidirectional attention，但是也说明不了什么。
+能否做到让image token 对 prompt中的提问也使用bidirectional attention呢？是否会让image token 关注到文本信息?
+
+VLM 没有了image encoder 就好像鱼没有自行车
+论文题目：The Scalability of Simplicity: Empirical Analysis of Vision-Language Learning with a Single Transformer
+做法： 
+vlm通常由llm，projector和vision encoder三个部分组成。sail去掉了vision encoder，直接用mlp projector将图片处理为image token，然后和text token一起喂给llm。
+缺点：
+首先，这种做法肯定是有很大的缺点。失去了vision encorder之后，就需要让llm来直接从一堆混乱的充满噪声的数据中提取图像信息。这无疑需要很大量级的训练数据和很精细的训练策略。
+原因：
+使用了比较粗糙的对比学习方式进行训练的vit尚且使用了400M的image text pair。而sail训练llm进行image caption和vqa这种更难的任务，肯定需要更精细的由易到难的数据配比，让模型先学会从简单的图片中提取简单的信息，否则很容易训崩模型。
+从最近的kimi vl可以看出，目前的vlm在训练时需要加入大量的，比例甚至超过一半的纯文本数据。因为多模态数据会破坏llm的文本能力。sail的做法相比正常vlm肯定会更加破坏llm的文本能力。
+启示：
+sail这篇文章有没有什么好的地方呢？首先，sail发现，通过去掉vision encoder，llm在计算过程中会分配给image token更多的attention score。文章提出：相比正常的vlm，这体现了sail的vision center的优点。
+我的直观理解是：正常vlm的image token来自于clip，本身就包含很多和text token接近的语义信息，所以在浅层llm layer 中 image token会和text token有比较高的attention score（即相似度），之后score降下来是因为image 信息已经被text token提取了。而sail的image token因为llm无法理解，所以需要一直分配高score用来提取信息。当然，attention的实际运作机制很可能并非如其字面意思“注意力”，因此以attention score揣测模型内部机理的做法并不可取。
+启示二：
+正常vlm在llm中对于image token和text token组成的整个sequence采用casual attention， 而sail对image token采用了双向attention。我认为只对image token采用双向attention并无必要，因为在正常vlm的vision encorder中已经对image token使用了双向attention。而sail因为其没有image encoder，可能在llm中对image token使用双向attention会效果影响更大。
+一个有趣的想法：
+能否在vlm训练中对image token和text token中的system prompt和question token（即label中设置为ignore index的部分）设置双向attention，使得image token可以关注到部分文本信息？
+总结来讲：
+去掉image encoder是一个有趣的思路。但是less is more并不一定有用。llm是有很强的能力，但是其参数空间也很脆弱（在参数量不大的情况下），不一定能经得起这么一顿造。
+所以，从sutton的the bitter lesson角度出发，放弃vision encoder 包含的庞大计算量而企图通过人为观察到的"vision centered"现象设计来VLM，这种做法肯定是得不偿失的。
+另一个有趣的想法：
+能否将sail 这里mlp projector得到的image token直接叠加到vision encoder 得到的image token上，确保vision encoder 处理之后丢失的图像信息被补充进来（就像resnet一样）？因为我一直有一种疑惑，是否clip这样的vision encoder 无法保存下来原始图像的所有信息。（不知道是否有相关的论文）
+
+【clip space】Post-pre-training for Modality Alignment in Vision-Language Foundation Models
+拉进image 和text space： 如何之间 减少正样本 向量的距离，会破坏原本的space 。（这种简单粗暴的拉进可能会让正样本脱离本身的space）
+所以将image vector 和 text vector 同时向一个既定的分布靠近，确保这种拉进向量距离的方式是可控的。每次从一个高斯分布中采样一个向量，将正样本都向这个向量靠近。这样既确保了靠近，同时指定了靠近的方向是一个简单的分布空间？
+但是有没有更好的既定的分布？比如说更强大的模型的分布。还是说现在的这种做法已经很好了。
+同时，为了确保不要太偏离原本的clip 空间，再将正负样本得到的相似度矩阵向着原本的clip得到的矩阵靠近。
+关键：确定了一个prior distribution 作为基准，使得loss （两向量的距离）这一优化目标变得更加可控（或者其他词语）
+
+【model edit】alpha edit：盗梦空间：如何成为大模型的主人？
+修改一个人的潜意识，需要通过盗梦空间来实现，修改一个模型的记忆，可以通过盗参数空间来实现。
+你是否希望拥有一个可以记住你的喜好，生活习惯或者个人信息的大模型？这就需要你修改模型的记忆，让它成为贴心的私人助手。常规的方法是将你希望模型记住的信息作为prompt喂给大模型，但是这样会增加文本长度，当文本过长时大模型可能会忘记这些信息。有没有更好的方法，将这些内容喂给大模型数据训练，使得信息被模型参数记住?
+有这样一类被称为 model edit的方法，通过针对性地调整一小部分模型参数，使得模型能够更好地记住指定的知识内容。alpha edit就是其中一篇工作，获得了iclr 2025的outstanding paper。
+Model edit 方法的基本思路是：
+1: 给模型输入一句话（比如：我是deepseek，我的主人是小明），其中“主人是小明”是小明希望模型学会的知识，但是模型现在存储的知识是“小黄”。我们希望找到模型在哪个线性层存储了“我的主人”这一知识。（这里涉及到一个前提：一般认为transformer模型是在线性层中存储了世界知识）所以，我们对不同layer的线性层的hidden states 添加扰动，然后观察：在哪一个线性层添加扰动会导致模型给出的知识发生变化，这个线性层就被认为存储了这一个知识。比如模型现在的知识是：主人的是小黄，但是在layer 3 的线性层 hidden states 添加扰动后，模型会改变输出结果为小绿。因此我们认为layer 3的线性层存储了deepseek的主人是小黄这一知识。
+2: 现在我们知道了layer 3的线性层存储了deepseek的主人这一知识。不过目前的知识是错误的，我们希望能够将知识纠正为正确的。所以我们希望通过修改layer 3的线性层参数能够使得模型记住新的主人“小明”。同时我们不希望因为修改了参数影响了参数中存储的其他知识。model edit 有一套通用的方法可以计算出线性层参数的变化量，变化之后可以使得模型记住新知识（的可能性提高）同时不忘记旧知识（的可能性提高）。这里涉及到数学上的证明，感兴趣的可以去看alpha edit或者其他model edit的论文。简单来说方法就是：我们可以求出模型对于“我的主人是”这半句话在“小明”这个词语上的loss，继而求出这个loss在layer 3的线性层上的梯度（这个梯度有利于模型记住新的知识）。同时我们再随机从知识库中抽取多条模型已经学会了的知识（在论文中抽取的知识数量是十万），计算模型的layer 3的线性层在这些知识上的hidden states。在保证这些hidden states 不要变化太大的基础上去利用上面的梯度更新layer 3的线性层参数，就可以比较好地让模型能够在记住“小明”这个知识的同时不忘记原来的知识。
+那么alpha edit相比于正常的model edit的改进在哪里呢？alpha edit 认为，抽取多条已有知识并确保模型在更新参数时对这些知识的hidden states 改变不要太多这种做法并不能很好地保护这些知识。因此该论文提出：让模型更新后的线性层对这些知识的hidden states和更新前保持完全一样，就可以做到完全保护这些知识了。所以alpha edit 通过某种方法找到这些hidden states 的null space，确保了更新后的参数对这些hidden states的影响发生在了null space上，也就是没有产生任何实质性的影响。
+Alpha edit表现出了一种十分高效的解决问题的思路。model edit的做法是在融入新知识和破坏旧知识之间做trade off，因此alpha edit 并不在原有做法上打补丁，而是尝试直接通过改变原有做法来避免trade off。
+总体上讲，我认为model edit 是一类比较有趣的方向。在我幻想中的未来，智能的模型会被用为每个人的私人助手。model edit可以使得独家信息被刻入助手的DNA，就像盗梦笔记一样，模型一觉醒过来，发现自己的潜意识已经被定向修改了。。。
+多说一句：在大模型的黑箱内部发现了某种规律（知识被存储在了线性层中），然后做出符合规律的修改，并且发现这些修改确实存在一定效果。这表现出了人对于科学的进步主义。就像先祖发现并利用火一样，对于拥有神奇的直观表象和复杂的本质规律的物理现象而言，保持敬畏之心，在运用中不断探索了解，最终会越来越抵达本质。
+
+【attention 优化】Slim attention: cut your context memory in half without loss of accuracy — K-cache is all you need for MHA
+ Vcache = Kcache * K-1 * V.
+减少了从内存中读取Vcache的时间，增加了计算时间。
+和MLA是相似的优化思路，都通过某种方式减少了kv cache的占用大小，和计算量做了trade off
+
+【image geneartion】Neighboring Autoregressive Modeling for Efficient Visual Generation
+修改了AR 生成patch的顺序。之前的生成顺序有从右到左从上到下或者随机位置生成，都无法很好利用image 邻近patch之间的内容相关性很高这一prior。因此采用了由左上到右下的生成思路。
+在代码实现上，利用transformer的AR方法，需要对sequence的正方形attention score 矩阵采用特殊的attion mask，来实现对于特定的patch，仅能看见其左上patch。（这一修改attention mask的思路和我的latent action transformer很像）
+【single transformer VLM】Mono-InternVL: Pushing the Boundaries of Monolithic Multimodal Large Language Models with Endogenous Visual Pre-training
+直接将image patch输入llm。在llm的每一层的mlp中添加image expert mlp。可以被看作从llm 到 vlm的moe upcycling。
+训练时第一阶段冻结llm原本参数，训练image expert 。
+相比于普通的single transformer VLM，减少了训练时noisy image data在训练初期对原本llm 参数的破坏。
+但是依然无法利用到image encoder。
+【我有一个good idea】 能否将vit的每一个layer 加到 llm中，作为image expert。既满足了减少image encoder训练时间，同时又能够做到利用image encoder。
+
+【information bottleneck】Rethinking Latent Redundancy in Behavior Cloning: An Information Bottleneck Approach for Robot Manipulation
+从 robot observation 到 action的映射难度比较大，如何减小映射难度呢？
+从information bottleneck的角度理解，从 observation 到 latent representation 再到action，我们希望让latent representation可以尽可能减少无用信息，包含更多有利于action的有用信息。因此可以通过优化目标：减少 observation和latent representation的互信息，同时增加latent representation和action的互信息。
+而后者的互信息可以用 loss（ prediction，action）来表示。
+前者的互信息无法直接求出，因此转换为了一个需要训练的下界，通过最大化该下界来使得该下界逼近互信息的值，使得下界的值被作为互信息。
+思考：减小前者的互信息是否是一个合理的优化目标？在优化的过程中是否主要通过减少了无用的latent representation 来做到减小互信息？
+出发点是好的，我的VAT也是从相同的出发点思考，通过拉进latent space 距离来使得representation能够包含更多有利于预测action的信息。
+
+【dual vla system】latent code as brdiges
+VLM 输出latent code给action policy。、
+训练目标包含 Loss action，Loss of VLM 以及 针对latent code的clip loss，让latent code 和 objective text拉近距离
+
+【multimodal generation】X Fusion
+From llm to multimodal understanding and generation
+在每一层layer新添加 vision module.关键：vision module 中 的QKV 是否需要再对text token进行计算。X fusion中进行了二次计算，增加了text token 从vision module 中获得的新的representation，但是也增加了FLOPS。不增加的做法是text token只计算text query。
+这类做法的本质是什么？都是如何增加新的参数让模型更好的适应图像的输出空间。同时确保原本llm的空间不被破坏。
+
+【latent action】Univla
+3D VAE 恢复的图像不是原始图像，而是dino的image feature。（因为原始图像有很多噪声？feature中有更多显示的有用空间信息，会帮助latent action 包含更多有用信息）、
+除此之外，没有太多亮点
+
+【self supervised learning】JEPA
+自监督图像训练有两种：一/让模型捕捉同一张图片的相似block的共性，需要prior来引入有效的aug方法。
+二/让模型预测mask的image。这种方式的缺点在与模型需要恢复图像，更多关注的是局部细节而非全局语义。使得模型在图片分类等semantic tasks上表现一般。
+JEPA 让模型预测target encoder对mask部分的representation。target encoder是自身模型的EMA。通过这种方法使得模型学会predict missing information in an abstract representation space,而不是 raw pixel space。这种方式比MAE更高效。
+Core motivation就是：使用更好的semantic representation作为训练目标，降低训练难度。和stable diffusion的latent space diffusion思路比较相似。
+思考：为什么使用EMA作为target会比较有效？让自身学习自身？是否关键在于representation是否稳定，在训练初期不一定要求这个representation特别好。
+
+【原生多模态】从原生多模态来思考AI共识：文本应该是实现人工智能的唯一形式
+原生多模态模型，指的是用一个端到端的模型就可以做到输入输出多个不同的模态（主要是文本和图像模态）。训练原生多模态模型有两种主流的做法。
+1：From scratch地训练一个可以接受text和image作为input并输出text和image的模型，代表作有Chameleon。
+2：改造一个llm为可以接受text和image作为input并输出text和image的模型，代表作有最近的mono-internvl以及XFusion。
+这两种做法目前目前尚没有比出高下，可能是因为原生多模态模型在开源领域目前没有被倾注太多的注意力和计算资源。可能有部分人会认为在足够的计算资源下From scratch训练一定会更好，但是我想给出一个相反的观点。
+从目前的状况看，文本是人工智能实现智能的唯一方式。
+1：文本和图像是人的思考过程表现在外界的两种符号体系。人工智能需要借助符号体系来学习因果关系，并表现出（人可以理解）的智能。
+2：文本的数据丰富程度远超图像（只可以用来喂给模型学习的数据）。
+3：人工智能目前还没有找到高效地仅从图像中进行学习的方法：在VLM领域，多模态数据中的图像都需要高质量的文本标注，实际是将图像视作了某种带有噪音的文本。在无监督CV领域，目前的做法只能获得image encoder，而不能获得（将来我认为也不能）world model。
+因此，以目前的人工智能发展趋势（业界已经从文本数据的数量和质量提升中尝到了甜头，形成了路径依赖，很难有勇气投入同样多的资源去发展摈弃了文本的图像数据的模型学习）文本会是实现智能的唯一的符号形式。（关于具身智能是否一定需要借助文本来实现robot智能，我会再开一帖）
+因此模型只能从文本训练数据中获得智能。而图像作为一种在分布上和文本截然不同的模态，其对于文字智能本身是没有贡献的。说回到原生多模态模型，只应该在需要图像模态时加入图像模态。这是什么意思呢？意思是，如果我们需要的是智能而不是多模态，就应该只使用文本。
+那么如何获得原生多模态模型呢？我的观点是：先得到一个牛的llm，然后转变为原生多模态模型。从llm到原生多模态的转变过程，一定会破坏原本的智能。因此，Xfusion的通过新添加参数来保证不破坏原本llm的参数空间的方法就很好。有没有更好的方法呢？我认为更好的方法的出发点应该是，让新加入的图像模态在分布上更接近文本模态。于是CLIP自然就被纳入了考虑的范围。像BLIP3-O的做法，让模型输出图像的CLIP feature我认为也是一个很好的思路。
+
+
+【latent action】Unified Video Action Model
+这篇论文给出了一个在训练时同时预测图像和action的模型结构。
+将history image，history action和future image的token在channel维度拼接在一起，使得token长度不变，但是channel数增多。将这样一个token sequence输入给一个transformer 之后得到的token sequence，就变当作了latent token。这里的latent token 其实就是模型的中间feature。之后这个feature被应用于预测image 和action。
+什么样的latent token 才是最好的token？是不是有一个显式的token更好？这样子更能符合AR的方式？这篇论文的图像生成的方式是类似于mask reconstrction。
+同时，能够从已有的模型权重初始化的latent action model 更好。要站在巨人肩膀上。
+
+【visual thinking】
+图像问题上的推理借助图像生成来planning会有更好的效果，这个是凭直觉来说正确的。
+但是能否将图像和文字的生成调整到同一个分布（同一个latent 分布）使得latent上的思考不局限于显式的图像和文本两个模态的区分。比如同一个latent representation可以同时decode出图像和文本
+
+【tactile】GelFusion: Enhancing Robotic Manipulation under Visual Constraints via Visuotactile Fusion
+关于触觉信息的处理，除了正常的encoder 之外，还有一个temporal difference module. 将相邻的tactile image 相减然后使用一个threshold 二值化，得到tactile变化的信息。然后计算二值化后的mean和variance,mean反映触觉信息的变化剧烈程度，variance反应触觉的变化是集中于某个点还是分散。
+这个模块的设计思路比较巧妙，对difference的关注
+
+【robot auxiliary information】UAD: Unsupervised Affordance Distillationfor Generalization in Robotic Manipulation
+微调dino v2使得其可以根据task embedding输出image observation中的轨迹或者和操作相关的image mask 。
+然后用这个dino v2作为各种policy中的image encoder，使得image representation从task agnositic 变成了task related。相当于从更大的模型中蒸馏了相关知识给dino v2.
+思想：使得image representation更有利于action space的输出。是一种减小学习难度的做法。
+
+【robot data scaling and latent action】D REAM G EN : Unlocking Generalization in Robot Learning through Neural Trajectories
+通过使用robot 数据微调video generation model，得到一个可以scaling robot video data的模型。然后对新生成的video data使用inverse dynamics model或者latent action model处理，得到real action或者latent action label，可以用于后续的policy training。
+整个pipeline最大的特点就是scaling data for action label。但是real action的质量需要考证。
+其实我的想法是：既然都有了一个可以生成robot video的model，何必在用这个model来创作数据，有没有更好的方法直接从model中获取latent action，使用model本身作为policy model。
+
+【video generation】PhyT2V: LLM-Guided Iterative Self-Refinement for Physics-Grounded Text-to-Video Generation
+通过llm来判断当前生成的视频的caption是否符合物理规律，是否符合prompt要求。如果不符合，就修改prompt。
+这种training free的方法用来提高视频生成模型的采样丰富程度和准确性。
+能否作为强化学习的方法？llm可以给出弱监督的信号用来提高视频生成质量
+这种training free的采样方式说明了模型内部存在能力，但是分布不稳定。
+所以需要通过强化学习来使分布偏移。在这个过程中llm的文本是否会起到帮助视频生成分布稳定的作用？（即监督信号是否需要llm的文字，还是只需要llm生成打分偏好）
+【VLA】Task Reconstruction and Extrapolation for π 0 using Text Latent
+这篇论文揭示了VLA学习过程中的过拟合现象。VLA的input是tast id，obs，output是action。不同task的id 可以做插值平均使得VLA完成不同的任务。这说明对于VLA来说其建立了id -> action 的直接映射，而忽略了action所操作的object以及环境。（在拿起object之后，改变id为另一id，完成根据特定的id 完成将object放到特定的位置这一操作，而忽略了object本身的种类）。
+【image generation】TACA: Rethinking Cross-Modal Interaction in Multimodal DiffusionTransformers
+很简单的思路：在MM DiT中，早期根据text生成image layout，后期生成detail。因此，在早期增大image token对于text token的attention score（在softmax时乘以一个系数来放大），来增加layout 对于text的alignment
+【scene generation】Dreamland
+利用 自驾仿真器，得到驾驶场景的图像信息以及深度图，物理信息等
+修改驾驶的场景背景来扩充数据。 生成背景利用的是生成模型来增加细节。
+其实是一种渲染方式。利用某种给定的condition获得渲染图。
+作为单图渲染，仿真器给出的物理信息有么又被合理利用？
+
+【robot data cotraining】ViSA-Flow: Accelerating Robot Skill Learning via Large-Scale Video Semantic Action Flow
+用人手操作数据预训练，期望模型能够理解视频中的action。
+预训练目标是future representation。
+疑惑：在这种不充分的pretrain情况下，是否真的有本质帮助？这里的pretrain和使用同等robot data pretrain应该没有本质上的区别？
+因为充分多的人手操作数据很难获得，而且没有必要。如果有充分训练的计算资源，应该在更广泛的视频数据上希望学到action。
+如何利用人类操作data 来进行transfer learning？在某个强大的model上做 in context learning。
+【COT】优化模型推理路径？不如破坏模型推理思考过程
+通过RL训练的推理模型有很明显的反思过程，即使用wait，however等词语来开启一段反思过程。这种推理方式增强了模型的推理能力，但也增加了许多不必要的思考过程 。
+因此，Wait, We Don’t Need to “Wait” ! 尝试通过删除模型推理时输出的wait ，however 这些词语，来减少模型的反思，减少推理长度。最终论文发现，这种简单的方式确实可以明显减少输出长度，但是也会使推理能力有一定的损失。（显而易见）
+虽然论文的做法和结论都很简单，但我认为这是很有意思的工作。它逆向反映了RL对于推理能力的提升很大程度上来自于推理pattern的改进：通过不断地反思和尝试不同的方法，来得到更优的推理内容，推导出更准确的推理结果。
+但是RL带来的这种推理ipattern并不一定是最好的，其通过增加显式的文本信息来促进推理过程，增加了计算开销。因此NOWAIT提供了一种十分简单的减少开销的方式，非常宝贵！
+进一步讲，NOWAIT代表了一类在token logits 角度花式采样模型输出分布的做法。这类做法可以成功的基础源于自回归大语言模型使用交叉熵损失函数因果式地建模语言的概率分布。虽然交叉熵损失函数只显式地增大next specific token的预测概率，但是由于训练数据充足，事实上模型建模了next token的distribution。最近很火的离散扩散语言模型能否做到类似的效果（在inference时采样多样的有效推理路径）？我目前认为很难。（虽然离散扩散语言模型的推理采样也有相比于自回归的优势）
+【UMM】show -O2
+针对3D causal VAE encoder得到的latents， 训练一个semantic layers使feature 和 siglip feature对齐，因为vae feature保留细节但缺失和text embedding 更适配的semantic 信息，同时再用另一个projetor 暴露vae latents本身的细节信息。
+训练特点：先 distill semantic layer。
+再两阶段，第一阶段训练flow head generation能力，第二阶段高质量数据
+【Attention】PAROAttention: Pattern-Aware ReOrdering for Efficient Sparse and Quantized Attention in Visual Generation Models
+利用attention的特性来加速推理。推理时通过分析注意力pattern，可以忽略掉注意力分数小的token。因此通过某种方法将注意力大的token放在一起，注意力小的token放在其他地方，可以有效找出注意力大的token。
+论文提出了指标来计算不同的token排序方式对注意力pattern的稀疏性的影响。找出最能提高稀疏性的排序方法。
+启发：设定某种寻找路径，来根据指标找出注意力的pattern，并利用pattrn进行优化
+【light perterbation】KV Cache Steering for Inducing Reasoning in Small Language Models
+将包含cot prompt的末尾token的 kv cache 加在待回答问题的末尾token的kv cache上，期望添加的向量能够激发cot。实际上是某种压缩的in context learning 方法。
+具体的添加向量来自于：包含cot 和不包含cot的同一问题的两个prompt的末尾token相减，期望得到只和cot 有关的部分。
+并且在添加时，是根据embedding寻找和带回答问题相似的prompt。
+反映了模型理解能力的鲁棒性：模型对于自己生产的向量或者信息，哪怕用一些其他方式利用或者添加进去，都不会对模型自身的计算产生太大的坏的影响
+【representation transfer】Vision-Language-Vision Auto-Encoder: Scalable Knowledge Distillation from Diffusion Models
+利用其他model 的representation，理解representation 有利于生成，生成representation也可以有利于理解。
+通过一个image encoder编码一个text embedding，还原出原image，就代表学会了representation 之间的反向映射。
+如何利用这个image to text 的反向映射？将反向映射给llm 来学习将embedding 转换为text。
+这是属于自监督的学习方法
+问题1：给vlm来学习会不会更好
+问题2：有没有更好的利用反向映射的方法。或者探究不同反向映射之间的差值，利用差值等信息编码图像
+问题3：text embedding的空间比较局限，会不会容易在训练时过拟合。思考从text embedding 到image的生成过程，也许并不需要包含很多信息，只需要不同属性的词组存在，就能指导image 的生成。因为text中不需要包含任何推理的过程。
+启发：思考更多的representation反向提取或者还原的方法
+【latent cot】A Survey on Latent Reasoning
+Latent reasoning 的本质：期望在不增加参数的情况下用计算量来增大“推理成功”这一指标。
+reasoning的本质是：因果链条的完善。
+Latent reasoning 很难自发学到因果链条。
+加剧了过拟合的风险。
+是增加参数的平替。
+Latent reasoning的未来不是增强reasoning能力，而是获得更好的representation。
+能否搭配长文本
+如何获得？
+
+Latent reasoning 的做法主要是：在transformer预测下一个token前，将transformer对于当前文本计算得到的hidden states并不直接用于decode下一个token，而是再输入给模型进行计算，然后再进行decode。
+这种做法的motivation在于：希望在不增加模型参数量的情况下通过增大计算量来实现更好的智能。
+目前latent reasoning的做法在一些简单的数学和推理benchmark上取得了一定的成效，但是我认为这并不能说明latent reasoning有足够的潜力推动模型的推理能力飞跃。目前的成绩有一定可能是baseline比较一般，latent reasoning实际作为一种很普通的post finetuning方法在特定benchmark上有涨点。
+模型reasoning的本质是：在人类提供的问题和答案之间，通过不断完善的因果链条来形成一条（或者多条）从问题指向答案的路径（COT）。由于问题和答案都是explict representation（即文字），推理路径的局部也许可以被latent reasoning这种implicit representation替代，但是整条路径本身是肯定无法通过latent reasoning来构建的。
+尽管如此，我认为latent reasoning提供了另一种价值：它说明了LLM的输入不用局限于文本的embedding，也可以是某种信息更丰富的implicit representation（由llama训练得到可以理解image token的llava，也证明了这一点）。考虑到llm其实就是理解输入的token并输出新的token，implicit representation在促进llm生成新的token进行推理这一方面可能很难work得很好，但是implicit representation可以被用来聚合输入的token信息。因此我认为latent reasoning的做法可以被用在长文本：长文本的难点在于模型感知遥远距离信息的能力随着长度外推减弱了，latent reasoning可以通过增加计算量来尝试更充分地感知长文本中的有用信息。（长文本也可以是多模态形式的输入）
+因此我觉得未来可以在latent reasoning和长文本相结合的领域有更多的工作。（或许目前latent reasoning在推理benchmark上的涨点其实就来自于对输入文本的更充分的感知？如果有某些实验证明了这一点，那么latent reasoning在长文本上work就更有可能了）
+【VQVAE】Vision Foundation Models as Effective Visual Tokenizers for Autoregressive Generation
+使用dino或者clip作为vqvae的encoder。同时使用dino 某版本作为判别器，并在reconstruction loss的基础上加了feature reconstruction loss。
+重建效果很好。
+疑问：使用dino或者clip编码的token是否有某些特点？比如词表的特点。
+是否可以统一理解和生成？
+【world model】Critiques of World Models
+1. 表征world state的方式不应该是离散token
+2. Reconstruction objective 并不好（如何平衡recon and generate)
+3. 是否需要text free？在目前的阶段 text的收益是否并不大
+4. 避免encoder decoder，而是使用encoder encoder（即encoder可以输入observatoin得到state，也可以输入observation and action 得到next observation 或者next state，state即observation在latent space的representation)
+5. 在latent space 重建和生成，而不是real space
+6. 要有生成action的能力
+7. 不需要学习重建细节，重点在于predict state
+
+【representation learning】G EOMETRY F ORCING : M ARRYING V IDEO D IFFUSIONAND 3D R EPRESENTATION FOR C ONSISTENT W ORLDM ODELING
+从VGGT中学习representation。需要理解VGGT模型的计算过程，如何很好的获得cross frame representation
+用于video geneartion过程中的时序一致性
+
+【长文本和推理的关系？】
+【temporal vision encoder】Token Bottleneck: One Token to Remember Dynamics
+引入reference image 的 feature token用于MAE，实际是多视角或者时序信息的引入？
+应该避免时序信息的过于丰富，因为并没有其他信号给出关于时序信息变化的指示，容易过拟合？或者在时序信息上过拟合也有一定好处。假想：对于机械臂来说，时序上的过拟合就是不好的。但是对于物理规律的理解来说，时序信息的过拟合就是好的。
+本质上是否是多视角的学习？并非时序
+需要思考好的vision encoder 时序信息学习的方法
+【world model'】DINO WM
+1. 在latent representation 上做 world model，根据 current representation and action predict next representation
+2. World model 就是simulation，不应该被用来做决策
+3. World model 中的action 信号最好先有泛化性，再和具体的action对应。DINO WM中的action 来自real action的MLP，不是特别好，但对具体的任务够用
+4. World model 和 video generation model的区别在与 world model 通过理解action 来model the world，
+5. 涉及到物理规律的仿真器world  model 会更加难获得
+
+【RLVR】THE INVISIBLE LEASH: WHY RLVR MAY NOT ESCAPE ITS ORIGIN
+On line sample RL 不能change thinking mode,因为是从采样的结果进行优化。
+增加了pass@1的成功率，但是很难提高pass@k。相当于增加distribution的sharpness，减少diversity。
+启示：数据给出的优化信号，是否 真的能提高模型能力，还是说只是让模型更加符合优化信号
+【RNN】The Serial Scaling Hypothesis
+transformer和SNN在计算x4时无需知道计算x3后的internal state，但是RNN需要。因此RNN从模型结构的角度来讲是serial的，而前两者不是。
+为什么transformer可以在训练时实现并行性？只要输入前面tokens的embedding，就可以计算出未来的token？而无需按顺序依次计算前面token的states？embedding和states到底是什么关系？对于序列问题来讲，是否真的使用embedding作为条件来计算真的合适？实际上，训练时的并行并没有将问题当作一个马尔科夫问题。下一个state只与上一个state有关，除非将embedding的集合视作上一个state。但是问题在与，embedding没办法包含相互之间的关系，因此只能捕捉到当前embedding作为q和其他embedding的k v之间的关系，而不能同时考虑到其他embedding之间的关系（在transformer layer的第一层，在后续层就可以了，很神奇的一点，因此transformer只是部分牺牲了serial特性？并没有完全丧失）
+【image tokenizer】Latent Denoising Makes Good Visual Tokenizers
+在VAE image tokenizer编码后的image token中加入噪音，并且对image进行mask，增强生成效果。
+原理在与：balance recon和generate？通过去除过拟合来增强生成能力？
+【world model】Back to the Features: DINO as a Foundation for Video World Models
+通过预测future latent image state来构造world model
+通过Adaln 引入action condition来辅助预测future state
+所有通过预测future来构造world model的方法都是错误的。
+World model中应该剔除主体性，future的实现包含了意志的介入，而这在future predict中被忽略了。future predict实际暗示了未来是唯一的，这导致了过拟合。因此需要有一种避免未来是唯一的学习方式
+
+【reasoning】R-Zero: Self-Evolving Reasoning LLM from Zero Data
+一个llm challenger和一个llm solver 互相迭代
+challenger提出问题，让solver解决，筛选出回答不确定性高的问题（voting acc 接近50%）来激励challenger给出难的问题
+solver解决challenger提出的难问题，通过voting选出正确答案作为reward
+思考：这种方式应该是可以使得solver对于能力范围内的问题的回答吧变得更加稳定，因为challenger提出的问题需要让voting acc不能过高或者过低。
+没有什么太大的作用? Voting 选出的答案作为pseudo label 的方式真的能给出好的reward signal吗
+在没有标准答案的领域，是否self evoving 会更加有效？
