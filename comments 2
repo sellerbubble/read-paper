@@ -1,7 +1,9 @@
-【MetaMorph: Multimodal Understanding and
-Generation via Instruction Tuning】
+【MetaMorph: Multimodal Understanding and Generation via Instruction Tuning】
 验证了image generation和understanding可以相互促进
 
-【Sparse Autoencoders for Scientifically Rigorous Interpretation
-of Vision Models】
+【Sparse Autoencoders for Scientifically Rigorous Interpretation of Vision Models】
 通过SAE的方法验证了，在ViT中也存在feature。siglip中的feature可以包含abstract concept。
+
+【Are Unified Vision-Language Models Necessary: Generalization Across Understanding and Generation】
+Understanding can benefit from generation, but this benefit depends on the alignment between the vision input and output spaces： 通过轻微改变input vision embedding，来使得misalignment并观察到scores下降
+knowledge transfer between gene and under: 通过构造数据集，来创造出独特的数据集特性：只在生成数据集中包含某些信息，并验证理解任务上模型的表现
