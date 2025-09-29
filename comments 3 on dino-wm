@@ -1,0 +1,17 @@
+【Generalizing Safety Beyond Collision-Avoidance via Latent-Space Reachability Analysis】
+使用wm来判断，哪些state是无论如何执行action都无法到达成功state的，检测并避免这些state。相当于剪枝
+
+【Strengthening Generative Robot Policies through Predictive World Modeling】
+利用wm来判断哪些轨迹是好的。也相当于剪枝
+
+【DynaGuide: Steering Diffusion Polices with Active Dynamic Guidance】
+wm在每一次duffusion去噪action的去噪步骤中判断action的好坏并施加梯度引导，
+
+【From Foresight to Forethought: VLM-In-the-Loop Policy Steering via Latent Alignment】
+使用一个VLM来更好的利用wm，对wm产生的轨迹进行更好地挑选
+
+【Learning from Reward-Free Offline Data: A Case for Planning with Latent Dynamics Models】
+潜空间自监督学习
+
+【Robotic World Model: A Neural Network Simulator for Robust Policy Optimization in Robotics】
+采用了一种双重自回归（dual-autoregressive）的自监督训练方法 。该方法不仅在时间序列的隐藏状态上进行自回归更新，更关键的是，它会将模型自身的预测结果作为后续预测的输入，从而在训练阶段就让模型适应其在推理时会遇到的数据分布
