@@ -1,3 +1,7 @@
 【MetaMorph: Multimodal Understanding and
 Generation via Instruction Tuning】
 验证了image generation和understanding可以相互促进
+
+【Sparse Autoencoders for Scientifically Rigorous Interpretation
+of Vision Models】
+通过SAE的方法验证了，在ViT中也存在feature。siglip中的feature可以包含abstract concept。
