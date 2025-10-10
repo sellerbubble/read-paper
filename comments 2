@@ -7,3 +7,6 @@
 【Are Unified Vision-Language Models Necessary: Generalization Across Understanding and Generation】
 Understanding can benefit from generation, but this benefit depends on the alignment between the vision input and output spaces： 通过轻微改变input vision embedding，来使得misalignment并观察到scores下降
 knowledge transfer between gene and under: 通过构造数据集，来创造出独特的数据集特性：只在生成数据集中包含某些信息，并验证理解任务上模型的表现
+
+【Latent Zoning Network: A Unified Principle for Generative Modeling, Representation Learning, and Classification】
+不同模态的数据不一定要share latent space，重要的也许不是latent space，而是to latent space的过程。能否让理解和生成是互相可逆的两个过程。是否在UMM中已经存在了某种分布上的可逆，或者某种share latent space
