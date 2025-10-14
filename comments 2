@@ -10,3 +10,11 @@ knowledge transfer between gene and under: 通过构造数据集，来创造出�
 
 【Latent Zoning Network: A Unified Principle for Generative Modeling, Representation Learning, and Classification】
 不同模态的数据不一定要share latent space，重要的也许不是latent space，而是to latent space的过程。能否让理解和生成是互相可逆的两个过程。是否在UMM中已经存在了某种分布上的可逆，或者某种share latent space
+
+【FROZEN TRANSFORMERS IN LANGUAGE MODELS
+ARE EFFECTIVE VISUAL ENCODER LAYERS】
+在vit后面拼接一层frozen llm layer，能够使得vit的下游任务表现更好。
+经过研究发现，图片主要区域的feature activation增大，但是cls token的attn scores并没有显著的特点。这说明llm layer放大了原本vit tokens中的有用信息，这间接benefit了cls token。
+这个现象可能可以体现出，llm 相比于vit的额外能力，可能是对于隐藏特征的挖掘。这来自于llm 的MLP而非attn，因为llm能够适应量级庞大的text token，这赋予了llm很强的对token的处理能力。
+只要让vit token符合某种llm能够理解的representation，就能够通过llm来放大vit token的某些特征。
+这对于VLM和UMM也有启发。说明其他模态的token很有可能是落入了llm 能够理解的连续的文本空间，从而因为某种程度类似text而获得了收益。
