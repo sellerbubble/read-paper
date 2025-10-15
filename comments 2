@@ -18,3 +18,6 @@ ARE EFFECTIVE VISUAL ENCODER LAYERS】
 这个现象可能可以体现出，llm 相比于vit的额外能力，可能是对于隐藏特征的挖掘。这来自于llm 的MLP而非attn，因为llm能够适应量级庞大的text token，这赋予了llm很强的对token的处理能力。
 只要让vit token符合某种llm能够理解的representation，就能够通过llm来放大vit token的某些特征。
 这对于VLM和UMM也有启发。说明其他模态的token很有可能是落入了llm 能够理解的连续的文本空间，从而因为某种程度类似text而获得了收益。
+而【Frozen Language Models are Gradient Coherence Rectifiers in Vision
+Transformers】提供了一个更理论的视角，llm通过影响梯度来帮助优化vit。llm layer增加了gradient coherence，即不同训练样本对应的梯度的方向一致性增加。这也许同样说明了，llm 会放大token中的某些有用feature。
+从而使得优化的方向更好，减少了优化的噪音。
