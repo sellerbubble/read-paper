@@ -26,4 +26,7 @@ Transformers】提供了一个更理论的视角，llm通过影响梯度来帮�
 2：text a -> image b 
 3：image b -> text c
 理解的过程中，representation本身及其转变很重要。生成的过程中，representation不再重要，可能是由于生成的VAE latents本身就是poor representation。
-生成和理解的representation的大差异，导致了对同一data point，理解和生成不一致。1和2并不是可逆的，就会出现3的情况
+生成和理解的representation的大差异，导致了对同一data point，理解和生成不一致。1和2并不是可逆的，就会出现3的情况。是否需要让模型针对p(image a | text a) 和 p（text a | image a)进行统一建模
+show-o 对理解和生成使用magvit统一编码，即使用codebook离散编码，生成的时候采用discrete diffusion。这种方法使得representation一致。
+unirl的核心就在于，生成图像token并用于回答理解问题时，针对理解问题的梯度可以回传到生成图像的token。但是从直觉上让理解问题直接通过梯度优化生成，好像很难想通。但是对于生成和理解统一representation的模型来说，似乎让生成和理解作为同一个任务来训练是有好处的。因为生成的gt不再是另一张图片，而是来自text gt的implicit supervision。
+t2I和MMu的能力不匹配，是否：如果t2i强于mmu，就先理解再生成，这样生成的loss可以回传到理解部分，促使模型的理解能力提升。宗旨是，让弱的能力受到强的能力的监督，因为强的能力确保了其本身的可靠性，所以误差更多来自于弱的能力。但是可能隐患是破坏了强的能力，因此需要思考如何将梯度隔离，只优化和弱的能力相关的token。也许可以detach ？
