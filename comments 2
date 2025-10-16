@@ -36,10 +36,45 @@ t2I和MMu的能力不匹配，是否：如果t2i强于mmu，就先理解再生�
 理解的起点是image encoder的representation，在理解的过程中逐渐分布转移到了能够被理解的space。而生成则是从噪音中获得了representation。这是两种from distribution to distribution的转移过程。
 两种转移过程相互之间是隔离的，割裂的。
 
-目前的UMM，理解和生成任务采用了不同的representation。对于理解任务，使用image encoder获得representation，称为RE。对于生成任务，使用VAE获得representation，称为RG。理解任务其实是模型将RE转变为了某种模型能够理解的（也许是和文本的representation处于比较近的距离）representation，因为最终输出文本描述，所以这种representation可以叫做RT。生成任务是模型将noise根据文本描述RT转变为了RG。
+目前的UMM，理解和生成任务采用了不同的representation。对于理解任务，使用image encoder获得representation，称为RE(Representation of Encoder)。
+对于生成任务，使用VAE获得representation，称为RG(Representation of Generation)。理解任务其实是模型将RE转变为了某种模型能够理解的（也许是和文本的representation处于比较近的距离）representation，因为最终输出文本描述，所以这种文本的representation可以叫做RT(Representation of Text)。
+生成任务是模型将noise和RT转变为了RG。
 这两种任务其实需要模型有两种不同的representation transfer的能力。
 这两种representation transfer可以被表述为：RE -> RT , RT -> RG。
 RecA这篇论文通过输入RE来要求输出RG，实际上建立了一种新的representation transfer： RE -> RG。并发现这种post training对于生成任务有效果提升，相当于增强了RT -> RG。
 这说明RE -> RG 和 RT -> RG两种representation transfer之间有某种正向相关性（也许可以证明二者的期望之间有某种正向相关性）
 但是，总体上理解和生成任务的representation transfer过程还是割裂的，相互之间关系不大。对于同一张图片，其理解和生成的RE和RG相差很大，representation transfer过程也相差很大。
 我希望通过某种方式能够拉近两种representation transfer之间的距离。
+现在已有的工作：
+图像理解和生成本来是两个领域。图像理解领域，大家使用Dino或者siglip之类的ViT来获得图像的feature，并用于VLM进行图像理解。图像生成领域，大家通过Diffusion、flow matching等方法训练图像生成模型。但是24年以来，一些工作尝试拉近两个领域的距离。出现这种趋势的一个重要的原因可能是，两个领域的模型能力提升都出现了瓶颈期，通过提升数据质量和数量的方式来升级的难度变得越来越大，因此尝试借助其他领域的模型来获得训练上的帮助变成了一个符合直觉的思路。
+用生成来帮助理解的主要思路是：通过某种生成式的方式来优化visual representation。
+一种做法是：将ViT的vision feature作为生成模型的输入条件，训练Diffusion模型生成图片，并让梯度传导到ViT，来优化ViT的参数。这种思路期望通过对ViT间接优化，来让ViT获得某种更好的representation（比如feature中会包含更多图像细节信息）。
+相关论文：
+DEEM: Diffusion Models Serve as the Eyes of Large Language Models for Image Perception
+DIVA: DIFFUSION FEEDBACK HELPS CLIP SEE BETTER 
+用理解来帮助生成的主要思路是：用理解模型给出的representation来优化生成模型的representation。
+主要做法是：生成模型在生成最终图像前，会产生一些中间representation。通过将中间representation与siglip或者Dino针对同一张图片的representation靠近，来使得生成模型的中间representation能够获得一些来自理解模型的优势，期望这种优势能够帮助生成模型更好地生成最终图像。
+相关论文：
+REPA: Representation Alignment for Generation: Training Diffusion Transformers Is Easier Than You Think
+其中DEEM和DIVA是让RE -> RG的过程能够帮助到RE（或者说帮助到pixel values -> RE),REPA是让noise(and text) -> RG的过程中加入了RE作为约束，从而帮助生成更好的RG。
+这两种工作都是某一representation transfer受到了其他representation transfer的过程或者结果的正向影响。
+但是我认为更好的方式是受到了其他representation transfer的过程影响，然后让这个过程可以通过梯度传导的方式传递给某一representation transfer，
+而不是直接拿其他representation transfer的结果来影响某一representation transfer。
+现在，我希望能够在UMM中提升RE -> RT , RT -> RG。我参考上面的做法，现在有下面的思路：
+通过引入RG -> RT, RG -> RE, RT -> RE 这三种representation transfer也许有效果。
+同时，我希望能够从gradient dynamics的角度分析这种效果。首先对于UMM来说，理解和生成任务的联合训练本身就有难度。可以认为是两种任务在loss optimization时提供的gradients方向
+很可能并不一致，这产生了冲突。因此，也许可以分析RG -> RT, RG -> RE, RT -> RE 这三种representation transfer 在post training时的gradients和原本的两种RE -> RT , RT -> RG
+以及RecA的RE -> RG的gradients之间的关系，来找到为什么RecA有效果的原因，以及这额外的三种是否会同样起效果。
+我的分析思路可以用四个问题来描述。
+问题1：UMM是否存在理解和生成的能力不匹配的问题？具体表现为，是否存在下面的情况：
+情况一：UMM根据文本生成了一张图片，但是不能针对生成的图片产生正确的文本。
+情况二：或者UMM根据图片生成了文本，但是不能根据文本生成正确的图片。
+问题2：这种能力不匹配意味着什么？
+情况一是否意味着：RT -> RG GOOD，RE -> RT BAD
+情况二是否意味着：RT -> RG BAD，RE -> RT GOOD
+问题3：能否通过RG -> RT，RT -> RE，RG -> RE来缓解情况。即通过representation transfer的reversal过程，来帮助模型。
+问题4：假如RG和RE都来自于同一个image encoder，是否会更好？因为理解和生成任务转变为了RE - RT 和 RT -> RE,这本身就是representation transfer的相互reversal。
+（此时RE - RT 和 RT -> RE是否能够被视为同一种任务了）
+如果问题3的答案是yes，那么问题4的答案也是yes。
+问题5：现在我寻找到一些例子，能够体现UMM的情况一和情况二。我是否有一些比较巧妙的思路，可以从模型生成的回答中采样出这两种特殊情况的数据。
+或者有没有相关的论文是构建或者采样类似的数据的。
