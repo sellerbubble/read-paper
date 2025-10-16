@@ -21,3 +21,9 @@ ARE EFFECTIVE VISUAL ENCODER LAYERS】
 而【Frozen Language Models are Gradient Coherence Rectifiers in Vision
 Transformers】提供了一个更理论的视角，llm通过影响梯度来帮助优化vit。llm layer增加了gradient coherence，即不同训练样本对应的梯度的方向一致性增加。这也许同样说明了，llm 会放大token中的某些有用feature。
 从而使得优化的方向更好，减少了优化的噪音。
+
+1：image a -> text a
+2：text a -> image b 
+3：image b -> text c
+理解的过程中，representation本身及其转变很重要。生成的过程中，representation不再重要，可能是由于生成的VAE latents本身就是poor representation。
+生成和理解的representation的大差异，导致了对同一data point，理解和生成不一致。1和2并不是可逆的，就会出现3的情况
