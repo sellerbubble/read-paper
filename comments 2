@@ -78,3 +78,6 @@ REPA: Representation Alignment for Generation: Training Diffusion Transformers I
 如果问题3的答案是yes，那么问题4的答案也是yes。
 问题5：现在我寻找到一些例子，能够体现UMM的情况一和情况二。我是否有一些比较巧妙的思路，可以从模型生成的回答中采样出这两种特殊情况的数据。
 或者有没有相关的论文是构建或者采样类似的数据的。
+又或者，我能否引入更复杂的representation transfer。RT -> RG -> RT, RE -> RG -> RE, RE -> RT -> RE, 第一阶段需要是已有的，这样给出的结果比较稳定。
+或者RG -> RT -> RG, RG -> RE -> RG, RT -> RE -> RT,这样梯度可以传导到第一阶段。但是先从一阶段的representation transfer开始。
+梯度分析：假如某几种transfer过程的梯度表现相似，说明可以相互促进或者替代。否则就有害。
