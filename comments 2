@@ -86,3 +86,6 @@ REPA: Representation Alignment for Generation: Training Diffusion Transformers I
 Representation Learning】不同模态embedding的各向异性反映了representation space的能力。各向异性越低，说明不同embeding的区分越好。
 我认为，衡量不同embedding的变化过程，而不仅仅是孤立的某个layer的embedding。也许是一个更好的方式。
 论文中一个有意思的现象是，只调整text的embedding space，可以对其他模态也减少各向异性。这说明不同模态之间有某种隐式的space alignment。
+
+【Transfer between Modalities with MetaQueries】metaquery 并没有实现理解和生成之间的交互。交互需要两种任务参数相同。metaquery中
+MLLM提供了一种static的embedding作为生成的condition。UMM中，理解和生成相互之间提供的应该是dynamic的representation transfer。
