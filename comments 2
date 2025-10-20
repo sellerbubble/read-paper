@@ -89,3 +89,5 @@ Representation Learning】不同模态embedding的各向异性反映了represent
 
 【Transfer between Modalities with MetaQueries】metaquery 并没有实现理解和生成之间的交互。交互需要两种任务参数相同。metaquery中
 MLLM提供了一种static的embedding作为生成的condition。UMM中，理解和生成相互之间提供的应该是dynamic的representation transfer。
+
+应该通过强化学习的方式来促进UMM，因为已有的feature足够好，需要自行探索相互之间的促进作用。思考RECA如何使用强化学习的方法。
