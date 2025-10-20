@@ -81,3 +81,8 @@ REPA: Representation Alignment for Generation: Training Diffusion Transformers I
 又或者，我能否引入更复杂的representation transfer。RT -> RG -> RT, RE -> RG -> RE, RE -> RT -> RE, 第一阶段需要是已有的，这样给出的结果比较稳定。
 或者RG -> RT -> RG, RG -> RE -> RG, RT -> RE -> RT,这样梯度可以传导到第一阶段。但是先从一阶段的representation transfer开始。
 梯度分析：假如某几种transfer过程的梯度表现相似，说明可以相互促进或者替代。否则就有害。
+
+【Scaling Language-Centric Omnimodal
+Representation Learning】不同模态embedding的各向异性反映了representation space的能力。各向异性越低，说明不同embeding的区分越好。
+我认为，衡量不同embedding的变化过程，而不仅仅是孤立的某个layer的embedding。也许是一个更好的方式。
+论文中一个有意思的现象是，只调整text的embedding space，可以对其他模态也减少各向异性。这说明不同模态之间有某种隐式的space alignment。
