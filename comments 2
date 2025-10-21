@@ -91,3 +91,6 @@ Representation Learning】不同模态embedding的各向异性反映了represent
 MLLM提供了一种static的embedding作为生成的condition。UMM中，理解和生成相互之间提供的应该是dynamic的representation transfer。
 
 应该通过强化学习的方式来促进UMM，因为已有的feature足够好，需要自行探索相互之间的促进作用。思考RECA如何使用强化学习的方法。
+
+【VAVAE】不仅让latent z和image encoder的embedding相似，也让z1和z2的相似度和embedding1和embedding2之间的相似度接近。
+既能够让z align with encoder，也能够让不同z的feature之间的特征类似encoder。确保了feature space上的整体分布能够和encoder接近。（虽然这种接近不一定有好处）
