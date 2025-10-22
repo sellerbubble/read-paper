@@ -37,7 +37,8 @@ t2I和MMu的能力不匹配，是否：如果t2i强于mmu，就先理解再生�
 两种转移过程相互之间是隔离的，割裂的。
 
 目前的UMM，理解和生成任务采用了不同的representation。对于理解任务，使用image encoder获得representation，称为RE(Representation of Encoder)。
-对于生成任务，使用VAE获得representation，称为RG(Representation of Generation)。理解任务其实是模型将RE转变为了某种模型能够理解的（也许是和文本的representation处于比较近的距离）representation，因为最终输出文本描述，所以这种文本的representation可以叫做RT(Representation of Text)。
+对于生成任务，使用VAE获得representation，称为RG(Representation of Generation)。
+理解任务其实是模型将RE转变为了某种模型能够理解的（也许是和文本的representation处于比较近的距离）representation，因为最终输出文本描述，所以这种文本的representation可以叫做RT(Representation of Text)。
 生成任务是模型将noise和RT转变为了RG。
 这两种任务其实需要模型有两种不同的representation transfer的能力。
 这两种representation transfer可以被表述为：RE -> RT , RT -> RG。
@@ -94,3 +95,7 @@ MLLM提供了一种static的embedding作为生成的condition。UMM中，理解�
 
 【VAVAE】不仅让latent z和image encoder的embedding相似，也让z1和z2的相似度和embedding1和embedding2之间的相似度接近。
 既能够让z align with encoder，也能够让不同z的feature之间的特征类似encoder。确保了feature space上的整体分布能够和encoder接近。（虽然这种接近不一定有好处）
+
+【SRUM: FINE-GRAINED SELF-REWARDING FOR UNIFIED MULTIMODAL MODELS】通过模型自己给生成的图片打分，获得score。
+但是理解生成更好的相互促进的方式，应该是in context improvement。即理解部分可以不断给出生成图像的修改意见，类似cot。要在训练的过程中
+通过数据的形式构造出理解和生成的统一pattern。
