@@ -103,3 +103,9 @@ MLLM提供了一种static的embedding作为生成的condition。UMM中，理解�
 
 图像和文本的巨大差异在于，文本的单个token信息比较少，其信息取决于上下文。而单个图像token的信息含量很高。
 因此，统一对图像和文本进行离散建模，可能会导致效果不好。而文本的上下文不仅仅取决于context，更取决于pretraining text。
+
+【uni-x】理解和生成任务存在gradient conflict。
+需要对图像理解和生成使用统一的encoder和representation。同时需要对图像理解和生成任务也做pretraining。
+可以是单独的encoder pretraining，也可以是统一的llm pretraining。需要对图像token建模上下文关系。
+pretrain时图像细粒度应该比较粗糙，首先需要学到大致的分布而不是细粒度的信息。
+
