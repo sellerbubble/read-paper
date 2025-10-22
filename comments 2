@@ -99,3 +99,4 @@ MLLM提供了一种static的embedding作为生成的condition。UMM中，理解�
 【SRUM: FINE-GRAINED SELF-REWARDING FOR UNIFIED MULTIMODAL MODELS】通过模型自己给生成的图片打分，获得score。
 但是理解生成更好的相互促进的方式，应该是in context improvement。即理解部分可以不断给出生成图像的修改意见，类似cot。要在训练的过程中
 通过数据的形式构造出理解和生成的统一pattern。
+能否先根据text生成image，然后输入image和text继续生成image。相当于对第一次生成的image做edit。
