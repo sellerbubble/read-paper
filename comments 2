@@ -109,3 +109,17 @@ MLLM提供了一种static的embedding作为生成的condition。UMM中，理解�
 可以是单独的encoder pretraining，也可以是统一的llm pretraining。需要对图像token建模上下文关系。
 pretrain时图像细粒度应该比较粗糙，首先需要学到大致的分布而不是细粒度的信息。
 
+image encoder中是否有建模上下文关系？比如假如将两张图片的左右侧拼接成一张图片，对于同一位置的某一个token，拼接之后encoder对其
+representation的表征能力是否会发生巨大的变化？变化的剧烈程度暗示了encoder对于图像的编码过程中每个token对于context的依赖程度。
+
+对于image encoder处理一张图像的过程而言，某个token是否代表其自身还是包含全局信息？local or global
+global程度是多少？
+如果改变这个token的上下文token，对这个token的影响程度如何？
+这是否说明，一张图片的所有token的才是其信息的总和，而非简单的一个token对应一个图像的patch。
+同时，这是否说明auto regressive范式本身就是错误的。
+
+UMM，如果理解和生成使用统一的架构（和image encoder），就会出现训练上的难度。
+如果对理解和生成使用独立的架构，则会导致representation的分离。（对于同一张图像而言，其理解和生成表征并不一致。）
+这种难度的根源在于，图像和文本的representation encoding方式的区别。
+global 和 local的区别。
+UMM的前提一定是统一的global encoding
