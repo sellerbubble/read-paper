@@ -22,3 +22,7 @@
 使用语言建模future state，如何更好地使用语言来精准描述未来状态的变化。
 语言是in context learning的基础，但是其并不准确。
 语言应该加上图像一起建模future state，也许可以实现in context learning
+
+【MOWM: MIXTURE-OF-WORLD-MODELS FOR EMBODIED PLANNING VIA LATENT-TO-PIXEL FEATURE
+MODULATION】使用video预测模型根据text来预测未来状态，并作为信号辅助另一个action模型输出action。
+当前工作对text的利用都很简陋。
