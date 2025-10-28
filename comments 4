@@ -17,3 +17,6 @@
 这些需要推理和知识并存的技能。
 需要一个强大的推理模型来提供给image edit模型最好的prompt
 运动状态转移的能力是否可以让image edit模型成为world model
+
+【SEMANTIC WORLD MODELS】
+使用语言建模future state，如何更好地使用语言来精准描述未来状态的变化。
