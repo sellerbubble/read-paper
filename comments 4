@@ -33,3 +33,6 @@ MODULATION】使用video预测模型根据text来预测未来状态，并作为�
 gemini：“世界模型”这一概念，源于认知科学，指的是一种对外部世界数据生成过程的内在、抽象的表征 。它并非简单的模式匹配，而是旨在恢复产生观测数据的核心、潜在的因果因素
 当训练的任务本身是“简单”的，也即任务所在的环境符合某种简洁的物理规律或组合结构，那么任务就是学到一个关于规律或者组合结构的某些简单状态变量的低复杂度函数。这种任务就是好的任务
 语言是否是最好的latent variable
+
+【Video-As-Prompt: Unified Semantic Control for
+Video Generation】对机器人使用video as prompt很惊艳。构造人手和机器人操作 video pairs。
