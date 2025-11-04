@@ -36,3 +36,6 @@ gemini：“世界模型”这一概念，源于认知科学，指的是一种�
 
 【Video-As-Prompt: Unified Semantic Control for
 Video Generation】对机器人使用video as prompt很惊艳。构造人手和机器人操作 video pairs。
+
+【metamorph】最工整的UMM。LLM输出的vision token 是以vision encoder编码的结果作为目标的。输出的vision token也需要通过projector投影到llm 维度。
+真正做到图像生成和理解的统一。
