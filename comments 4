@@ -39,3 +39,10 @@ Video Generation】对机器人使用video as prompt很惊艳。构造人手和�
 
 【metamorph】最工整的UMM。LLM输出的vision token 是以vision encoder编码的结果作为目标的。输出的vision token也需要通过projector投影到llm 维度。
 真正做到图像生成和理解的统一。
+
+【Implicit Multimodal Alignment: On the
+Generalization of Frozen LLMs to Multimodal Inputs】multimodal inputs 各自有一个小的锥形区域放置其embedding，不同的模态的锥形不同。
+（不同模态的embedding相似度都不同）
+norm 也能体现token的特点
+【PairUni】通过组织相似数据的generation understanding data pairs 用于post training，提高了janus pro的能力。
+这说明janus pro的能力处于一种兼容两种任务的比较一般的平衡态，post training可以轻易地更好地提高其两种任务的能力
