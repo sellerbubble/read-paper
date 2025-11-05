@@ -34,6 +34,7 @@ gemini：“世界模型”这一概念，源于认知科学，指的是一种�
 当训练的任务本身是“简单”的，也即任务所在的环境符合某种简洁的物理规律或组合结构，那么任务就是学到一个关于规律或者组合结构的某些简单状态变量的低复杂度函数。这种任务就是好的任务
 语言是否是最好的latent variable
 
+
 【Video-As-Prompt: Unified Semantic Control for
 Video Generation】对机器人使用video as prompt很惊艳。构造人手和机器人操作 video pairs。
 
@@ -46,3 +47,5 @@ Generalization of Frozen LLMs to Multimodal Inputs】multimodal inputs 各自有
 norm 也能体现token的特点
 【PairUni】通过组织相似数据的generation understanding data pairs 用于post training，提高了janus pro的能力。
 这说明janus pro的能力处于一种兼容两种任务的比较一般的平衡态，post training可以轻易地更好地提高其两种任务的能力
+
+【tokenflow】dual codebook。 semantic codebook learn from siglip。本质是representation transfer。
