@@ -49,3 +49,5 @@ norm 也能体现token的特点
 这说明janus pro的能力处于一种兼容两种任务的比较一般的平衡态，post training可以轻易地更好地提高其两种任务的能力
 
 【tokenflow】dual codebook。 semantic codebook learn from siglip。本质是representation transfer。
+
+【SODA: Bottleneck Diffusion Models for Representation Learning】 novel view synthesis, 学习到了semantic 信息。将生成过程中的语义和细节生成一定程度解耦
