@@ -1,0 +1,28 @@
+"In SSL, one does not assume a priori what is informative; instead, one specifies which variations are uninformative and should be disregarded."
+
+SSL(Self Supervised Learning, 自监督学习)的目标是通过（图像）增强促使模型学习数据在增强前后的不变性。
+举例：一张猫的图像，经过裁剪或者灰化等增强方式，猫的语义并没有发生改变。SSL希望模型能够
+忽视增强带来的变化，捕捉到图像中的重要信息，即猫这个语义对象。
+
+因此SSL对（图像）增强的理想期望是：在不改变数据中的重要信息的前提下，增加噪音信息的内容。
+用数学的方式表达就是，原始数据可以被分为重要信息x和噪音信息y，即raw data = x + y
+经过理想的增强后，aug data = x + y * a, a是噪音信息被改变的比例。
+
+对于SSL来说，其学习方式就是：在raw data和aug data之中，找到具有不变性的重要信息x。
+可以看出，**SSL中有效学习信号的（唯一）来源就是增强**。增强方式越有效，SSL的效果就越好。
+
+但是实际上增强不可能满足理想期望。在实际的增强中往往发生下面的情况：
+Aug data = x * b + y * a + c。此时raw data中的有效信息和噪音信息都被改变了，而且还引入了额外的噪音信息c。此时SSL在raw data 和 aug data之间，寻找不变性的难度增加了，模型可能会从噪音信息y中学习某种不变性而非从希望的重要信息x中。
+
+因此合适的增强是SSL成功的前提。
+
+SSL分为重构目标（MAE）和联合嵌入预测目标（DINO，BYOL）
+对于重构目标来说，其在像素空间中对于raw data的x和y的重建是一视同仁的。而联合嵌入预测在表示空间进行，更加关注具有不变性的信息（在理想的增强情况下，raw data中的x是唯一具有不变性的信息）。
+当raw data 中 x >> y时，即数据中的噪音信息比较弱，使用重构目标训练效果较好。此时重构目标对增强的要求比较弱（因为需要增强的y占比很少）。但此时联合嵌入预测却对增强要求更高，因为其寻找重要信息x的方式是从变化中寻找不变性（从噪音中寻找重要信息）。如果噪音不存在了，寻找重要信息的动力也就不存在了。作为变化（和噪音）的y占比很小时，就需要更有效的增强来获得 aug data中的 y * a。
+当raw data中y的占比增加，即噪音信息比较高时，重构目标的训练会使得模型把重构能力分散在噪音上，使得对重要信息的重构效果下降。
+此时，使用联合嵌入预测训练效果更好，因为其训练目标对噪音信息更鲁棒。此时联合嵌入预测目标对增强的要求则相对较弱。
+
+总体而言，增强作为SSL中有效学习信号的（唯一）产生方式，决定了SSL从数据中寻找不变性的难易程度。
+
+参考：
+Joint-Embedding vs Reconstruction:  Provable Benefits of Latent Space Prediction  for Self-Supervised Learning
