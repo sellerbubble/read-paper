@@ -1,0 +1,22 @@
+柏拉图表征假说（platonic representation hypothesis）指出，不同模型对于真实世界的数据的理解方式是相似的（对于相同的数据，不同模型得到的表征具有某种相似性）。这一假说正在深刻影响表征学习。
+
+REPA（及后续工作REPA-E，U-REPA，REG）的成功证明了生成模型（DiT）可以通过“对齐”判别模型（DINOv2）的特征来大幅加速训练。这种借鉴其他模型的表征来优化自身表征的学习方式刻意创造出了生成模型和判别模型之间的柏拉图表征关系，同时也验证了柏拉图表征假说对于表征学习的推动作用。
+
+由此引出以下四点：
+
+1. 柏拉图表征假说的成立
+
+2. 有效利用柏拉图表征假说可以加速表征学习（各种意义上，包括判别式表征和生成式表征）
+
+3. 柏拉图表征假说的重点在于“结构性”。（并不仅仅是同一样本在不同表征中的向量具有数值上的相似性，更是一批样本在不同表征中的分布具有相似的“拓扑性“）真实数据的规律体现为数据中存在的结构性，这种结构性在表征学习的过程中被映射到表征中。
+
+4.表征学习之间可能存在左脚踩右脚的进步方式。（理解模型的表征促进生成，生成模型的表征继续促进理解）
+
+因此，柏拉图表征假说其实是在启发我们，假如山顶真的只有一个，那么坐已经修建好的缆车到半山腰，要比从山脚开始爬省力气。
+
+参考文献：
+
+Representation Alignment for Generation: Training Diffusion Transformers Is Easier Than You Think
+REPA-E: Unlocking VAE for End-to-End Tuning with Latent Diffusion Transformers
+Representation Entanglement for Generation: Training Diffusion Transformers Is Much Easier Than You Think
+U-REPA: Aligning Diffusion U-Nets to ViTs
